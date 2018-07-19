@@ -91,14 +91,14 @@ object RequestBlob{
   object SizedBlob{
     implicit class BytesRequestBlob(val x: Array[Byte]) extends SizedBlob{
       override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream",
+        "Content-Type" -> "application/octed-stream"
       )
       def length = x.length
       def write(out: java.io.OutputStream) = out.write(x)
     }
     implicit class StringRequestBlob(val x: String) extends SizedBlob{
       override def headers = super.headers ++ Seq(
-        "Content-Type" -> "text/plain",
+        "Content-Type" -> "text/plain"
       )
       val serialized = x.getBytes()
       def length = serialized.length
@@ -106,14 +106,14 @@ object RequestBlob{
     }
     implicit class FileRequestBlob(val x: java.io.File) extends SizedBlob{
       override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream",
+        "Content-Type" -> "application/octed-stream"
       )
       def length = x.length()
       def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
     }
     implicit class NioFileRequestBlob(val x: java.nio.file.Path) extends SizedBlob{
       override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream",
+        "Content-Type" -> "application/octed-stream"
       )
       def length = java.nio.file.Files.size(x)
       def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
@@ -122,7 +122,7 @@ object RequestBlob{
 
   implicit class InputStreamRequestBlob(val x: java.io.InputStream) extends RequestBlob{
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octed-stream",
+      "Content-Type" -> "application/octed-stream"
     )
     def write(out: java.io.OutputStream) = Util.transferTo(x, out)
   }
@@ -130,7 +130,7 @@ object RequestBlob{
     val serialized = Util.urlEncode(x).getBytes
     def length = serialized.length
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/x-www-form-urlencoded",
+      "Content-Type" -> "application/x-www-form-urlencoded"
     )
     def write(out: java.io.OutputStream) = {
       out.write(serialized)

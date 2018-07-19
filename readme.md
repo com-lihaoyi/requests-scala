@@ -5,6 +5,18 @@ Requests-Scala is a Scala port of the popular Python
 provide the same API and user-experience as the original Requests: flexible,
 intuitive, and incredible straightforward to use.
 
+- [Making a Request](#making-a-request)
+    - [Passing in Parameters](#passing-in-parameters)
+    - [Response Content](#response-content)
+- [Streaming Requests](#streaming-requests)
+- [Multipart Uploads](#multipart-uploads)
+- [Misc Configuration](#misc-configuration)
+    - [Custom Headers](#custom-headers)
+    - [Timeouts](#timeouts)
+    - [Compression](#compression)
+    - [Cookies](#cookies)
+    - [Redirects](#redirects)
+- [Sessions](#sessions)
 ## Making a Request
 ```scala
 val r = requests.get("https://api.github.com/users/lihaoyi")
@@ -37,7 +49,7 @@ val r = requests.head("http://httpbin.org/head")
 val r = requests.options("http://httpbin.org/get")
 ```
 
-## Passing in parameters
+### Passing in Parameters
 
 ```scala
 val r = requests.get(
@@ -65,7 +77,7 @@ requests.post("https://httpbin.org/post", data = new java.io.File("thing.json"))
 requests.post("https://httpbin.org/post", data = java.nio.file.Paths.get("thing.json"))
 ```
 
-## Response Content
+### Response Content
 
 ```scala
 val r = requests.get("https://api.github.com/events")
@@ -201,31 +213,96 @@ to the `data` parameter. Each `MultiItem` needs a name and a data-source, which
 can be a `String`, `Array[Byte]`, `java.io.File`, or `java.nio.file.Path`. Each
 `MultiItem` can optionally take a file name that will get sent to the server
 
-## Response Headers
+## Misc Configuration
 
-```scala
-r.headers
-// Map(
-//   "server" -> Buffer("gunicorn/19.8.1"),
-//   "access-control-allow-origin" -> Buffer("*"),
-//   "content-length" -> Buffer("725"),
-//   "access-control-allow-credentials" -> Buffer("true"),
-//   "date" -> Buffer("Thu, 19 Jul 2018 16:33:03 GMT"),
-//   "content-type" -> Buffer("application/json"),
-//   "via" -> Buffer("1.1 vegur"),
-//   "connection" -> Buffer("keep-alive")
-// )
-```
+Earlier you already saw how to use the `params` and `data` arguments. Apart from
+those, the `requests.get` method takes in a lot of arguments you can use to
+configure it, e.g. passing in custom headers:
 
-## Custom Headers
+### Custom Headers
 
 ```scala
 requests.get(
   "https://api.github.com/some/endpoint",
   headers = Map("user-agent" -> "my-app/0.0.1")
 )
+```
 
-## Cookies
+
+### Timeouts
+
+`readTimeout`s and `connectTimeout`s:
+
+```scala
+requests.get("https://httpbin.org/delay/1", readTimeout = 10)
+// TimeoutException
+
+requests.get("https://httpbin.org/delay/1", readTimeout = 1500)
+// ok 
+
+requests.get("https://httpbin.org/delay/3", readTimeout = 1500)
+// TimeoutException
+```
+
+```scala
+requests.get("https://httpbin.org/delay/1", connectTimeout = 10)
+// TimeoutException
+
+requests.get("https://httpbin.org/delay/1", connectTimeout = 1500)
+// ok
+
+requests.get("https://httpbin.org/delay/3", connectTimeout = 1500)
+// ok
+```
+
+### Compression
+
+Configuration for compressing the request `data` upload with Gzip or Deflate via
+the `compress` parameter:
+
+```scala
+requests.post(
+  "https://httpbin.org/post",
+  compress = requests.Compress.None,
+  data = "Hello World"
+)
+
+requests.post(
+  "https://httpbin.org/post",
+  compress = requests.Compress.Gzip,
+  data = "I am cow"
+)
+
+requests.post(
+  "https://httpbin.org/post",
+  compress = requests.Compress.Deflate,
+  data = "Hear me moo"
+)
+```
+
+Or to disabling the de-compression of the response `data` being downloaded via
+the `autoCompress` parameter, in case you want the un-compressed data blob for
+whatever reason:
+
+```scala
+requests.get("https://httpbin.org/gzip").data.bytes.length
+// 250
+
+requests.get("https://httpbin.org/gzip", autoDecompress=false).data.bytes.length
+// 201
+
+
+requests.get("https://httpbin.org/deflate").data.bytes.length
+// 251
+
+requests.get("https://httpbin.org/deflate", autoDecompress=false).data.bytes.length
+// 188
+```
+
+### Cookies
+
+You can take the cookies that result from one HTTP request and pass them into a
+subsequent HTTP request:
 
 ```scala
 val r = requests.get("https://httpbin.org/cookies/set?freeform=test")
@@ -240,6 +317,68 @@ val r2 = requests.get("https://httpbin.org/cookies", cookies = r.cookies)
 r2.data.text
 // {"cookies":{"freeform":"test"}}
 ```
+
+This is a common pattern, e.g. to maintain an authentication/login session
+across multiple requests. However, it may be easier to instead use Sessions...
+
+
+### Redirects
+
+Requests handles redirects automatically for you, up to a point:
+
+```scala
+val r = requests.get("http://www.github.com")
+
+r.url
+// https://github.com/
+
+r.history
+// Some(Response("https://www.github.com", 301, "Moved Permanently", ...
+
+r.history.get.history
+// Some(Response("http://www.github.com", 301, "Moved Permanently", ...
+
+r.history.get.history.get.history
+// None
+```
+
+As you can see, the request to `http://www.github.com` was first redirected to
+`https://www.github.com`, and then to `https://github.com/`. Requests by default
+only follows up to 5 redirects in a row, though this is configurable via the
+`maxRedirects` parameter:
+
+```scala
+val r0 = requests.get("http://www.github.com", maxRedirects = 0)
+// Response("http://www.github.com", 301, "Moved Permanently", ...
+
+r0.history
+// None
+
+val r1 = requests.get("http://www.github.com", maxRedirects = 1)
+// Response("http://www.github.com", 301, "Moved Permanently", ...
+
+r1.history
+// Some(Response("http://www.github.com", 301, "Moved Permanently", ...
+
+r1.history.get.history
+// None
+```
+
+As you can see, you can use `maxRedirects = 0` to disable redirect handling
+completely, or use another number to control how many redirects Requests follows
+before giving up.
+
+All of the intermediate responses in a redirect chain are available in a
+Response's `.history` field; each `.history` points 1 response earlier, forming
+a linked list of `Response` objects until the earliest response has a value of
+`None`. You can crawl up this linked list if you want to inspect the headers or
+other metadata of the intermediate redirects that brought you to your final value.
+
+## Sessions
+
+A `requests.Session` automatically handles sending/receiving/persisting cookies
+for you across multiple requests:
+
 ```scala
 val s = requests.Session()
 
@@ -251,7 +390,12 @@ r2.data.text
 // {"cookies":{"freeform":"test"}}
 ```
 
-## Session
+If you want to deal with a website that uses cookies, it's usually easier to use
+a `requests.Session` rather than passing around `cookie` variables manually.
+
+Apart from persisting cookies, sessions are also useful for consolidating common
+configuration that you want to use across multiple requests, e.g. custom
+headers, cookies or other things:
 
 ```scala
 val s = requests.Session(
@@ -280,79 +424,5 @@ r4.data.text
 // {"headers":{"X-Special-Header":"omg", ...}}
 """
 ```
-## Redirects
 
-```scala
-val r = requests.get("http://www.github.com")
-
-r.url
-// https://github.com/
-
-r.history
-// Some(Response("https://www.github.com/?", 301, "Moved Permanently", ...
-
-r.history.get.history
-// Some(Response("http://www.github.com", 301, "Moved Permanently", ...
-
-r.history.get.history.get.history
-// None
-```
-
-```scala
-val r0 = requests.get("http://www.github.com", maxRedirects = 0)
-// Response("http://www.github.com", 301, "Moved Permanently", ...
-
-r0.history
-// None
-
-val r1 = requests.get("http://www.github.com", maxRedirects = 1)
-// Response("http://www.github.com", 301, "Moved Permanently", ...
-
-r1.history
-// Some(Response("http://www.github.com", 301, "Moved Permanently", ...
-
-r1.history.get.history
-// None
-```
-
-## Timeouts
-```scala
-
-requests.get("https://httpbin.org/delay/1", readTimeout = 10)
-// TimeoutException
-
-requests.get("https://httpbin.org/delay/1", readTimeout = 1500)
-// ok 
-
-requests.get("https://httpbin.org/delay/3", readTimeout = 1500)
-// TimeoutException
-```
-
-```scala
-requests.get("https://httpbin.org/delay/1", connectTimeout = 10)
-// TimeoutException
-
-requests.get("https://httpbin.org/delay/1", connectTimeout = 1500)
-// ok
-
-requests.get("https://httpbin.org/delay/3", connectTimeout = 1500)
-// ok
-```
-
-## Compression
-
-```scala
-requests.get("https://httpbin.org/gzip").data.bytes.length
-// 250
-
-requests.get("https://httpbin.org/gzip", autoDecompress=false).data.bytes.length
-// 201
-
-
-requests.get("https://httpbin.org/deflate").data.bytes.length
-// 251
-
-requests.get("https://httpbin.org/deflate", autoDecompress=false).data.bytes.length
-// 188
-```
 

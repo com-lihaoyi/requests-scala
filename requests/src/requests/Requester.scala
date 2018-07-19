@@ -35,7 +35,7 @@ object BaseSession{
     "User-Agent" -> "requests-scala",
     "Accept-Encoding" -> "gzip, deflate",
     "Connection" -> "keep-alive",
-    "Accept" -> "*/*",
+    "Accept" -> "*/*"
   )
 }
 
