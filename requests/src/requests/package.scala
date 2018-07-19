@@ -23,5 +23,5 @@ package object requests extends _root_.requests.BaseSession {
 
   def autoDecompress: Boolean = true
 
-  def compress: Compress = Compress.Gzip
+  def compress: Compress = Compress.None
 }

@@ -13,16 +13,24 @@ import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
   * by default
   */
 trait Compress{
+  def headers: Seq[(String, String)]
   def wrap(x: OutputStream): OutputStream
 }
 object Compress{
   object Gzip extends Compress{
+    def headers = Seq(
+      "Content-Encoding" -> "gzip"
+    )
     def wrap(x: OutputStream) = new GZIPOutputStream(x)
   }
   object Deflate extends Compress{
+    def headers = Seq(
+      "Content-Encoding" -> "deflate"
+    )
     def wrap(x: OutputStream) = new DeflaterOutputStream(x)
   }
   object None extends Compress{
+    def headers = Nil
     def wrap(x: OutputStream) = x
   }
 }
@@ -40,11 +48,12 @@ case class Request(url: String,
                    readTimeout: Int = 0,
                    connectTimeout: Int = 0,
                    proxy: (String, Int) = null,
-                   cookies: Map[String, String] = Map(),
+                   cookies: Map[String, HttpCookie] = Map(),
+                   cookieValues: Map[String, String] = Map(),
                    maxRedirects: Int = 5,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
-                   compress: Compress = Compress.Gzip)
+                   compress: Compress = Compress.None)
 
 /**
   * Wraps the array of bytes returned in the body of a HTTP response
@@ -193,19 +202,20 @@ case class Response(url: String,
                     data: ResponseBlob,
                     history: Option[Response]){
 
-  def cookies: Map[String, HttpCookie] = headers
-    .get("Set-Cookie")
+  val cookies: Map[String, HttpCookie] = history.toSeq.flatMap(_.cookies).toMap ++ headers
+    .get("set-cookie")
     .iterator
     .flatten
     .flatMap(java.net.HttpCookie.parse(_).asScala)
     .map(x => x.getName -> x)
     .toMap
 
-  def contentType = headers.get("Content-Type").flatMap(_.headOption)
-  def location = headers.get("Location").flatMap(_.headOption)
+  def contentType = headers.get("content-type").flatMap(_.headOption)
+  def location = headers.get("location").flatMap(_.headOption)
 }
 
-case class StreamHeaders(statusCode: Int,
+case class StreamHeaders(url: String,
+                         statusCode: Int,
                          statusMessage: String,
                          headers: Map[String, Seq[String]],
                          history: Option[Response])

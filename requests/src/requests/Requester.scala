@@ -2,7 +2,6 @@ package requests
 
 import java.io.ByteArrayOutputStream
 import java.net.{HttpCookie, HttpURLConnection, InetSocketAddress}
-import java.security.cert.X509Certificate
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import javax.net.ssl._
@@ -11,7 +10,7 @@ import collection.JavaConverters._
 import scala.collection.mutable
 
 trait BaseSession{
-  def headers: Seq[(String, String)]
+  def headers: Map[String, String]
 
   def cookies: mutable.Map[String, HttpCookie]
   def readTimeout: Int
@@ -32,7 +31,7 @@ trait BaseSession{
 }
 
 object BaseSession{
-  val defaultHeaders = Seq(
+  val defaultHeaders = Map(
     "User-Agent" -> "requests-scala",
     "Accept-Encoding" -> "gzip, deflate",
     "Connection" -> "keep-alive",
@@ -75,30 +74,26 @@ case class Requester(verb: String,
             readTimeout: Int = sess.readTimeout,
             connectTimeout: Int = sess.connectTimeout,
             proxy: (String, Int) = null,
-            cookies: Map[String, String] = Map(),
+            cookies: Map[String, HttpCookie] = Map(),
+            cookieValues: Map[String, String] = Map(),
             maxRedirects: Int = sess.maxRedirects,
             verifySslCerts: Boolean = sess.verifySslCerts,
             autoDecompress: Boolean = sess.autoDecompress,
             compress: Compress = sess.compress): Response = {
     val out = new ByteArrayOutputStream()
-    var responseCode: Int = -1
-    var responseMessage: String = null
-    var headerFields: Map[String, Seq[String]] = null
-    var redirectedFrom: Option[Response] = null
+    var streamHeaders: StreamHeaders = null
+
     stream(
       url, auth, params, data.headers ++ headers, readTimeout, connectTimeout,
-      proxy, cookies, maxRedirects, verifySslCerts, autoDecompress, compress
+      proxy, cookies, cookieValues, maxRedirects, verifySslCerts, autoDecompress, compress
     )(
       if (data == RequestBlob.EmptyRequestBlob) null
       else upload => data.write(upload),
       sh => {
-        responseCode = sh.statusCode
-        responseMessage = sh.statusMessage
-        headerFields = sh.headers
-        redirectedFrom = sh.history
+        streamHeaders = sh
         if (sess.persistCookies) {
-          headerFields
-            .get("Set-Cookie")
+          streamHeaders.headers
+            .get("set-cookie")
             .iterator
             .flatten
             .flatMap(HttpCookie.parse(_).asScala)
@@ -109,12 +104,12 @@ case class Requester(verb: String,
       download => Util.transferTo(download, out)
     )
     Response(
-      url,
-      responseCode,
-      responseMessage,
-      headerFields,
+      streamHeaders.url,
+      streamHeaders.statusCode,
+      streamHeaders.statusMessage,
+      streamHeaders.headers,
       new ResponseBlob(out.toByteArray),
-      redirectedFrom
+      streamHeaders.history
     )
   }
 
@@ -150,7 +145,8 @@ case class Requester(verb: String,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
              proxy: (String, Int) = null,
-             cookies: Map[String, String] = Map(),
+             cookies: Map[String, HttpCookie] = Map(),
+             cookieValues: Map[String, String] = Map(),
              maxRedirects: Int = sess.maxRedirects,
              verifySslCerts: Boolean = sess.verifySslCerts,
              autoDecompress: Boolean = sess.autoDecompress,
@@ -206,15 +202,16 @@ case class Requester(verb: String,
 
       for((k, v) <- headers) connection.setRequestProperty(k, v)
 
-      auth.header.foreach(connection.setRequestProperty("Authorization", _))
+      for((k, v) <- compress.headers) connection.setRequestProperty(k, v)
 
       connection.setReadTimeout(readTimeout)
+      auth.header.foreach(connection.setRequestProperty("Authorization", _))
       connection.setConnectTimeout(connectTimeout)
       connection.setUseCaches(false)
       connection.setDoOutput(true)
 
       val sessionCookieValues = for{
-        c <- sess.cookies.valuesIterator
+        c <- (sess.cookies ++ cookies).valuesIterator
         if !c.hasExpired
         if c.getDomain == null || c.getDomain == url1.getHost
         if c.getPath == null || url1.getPath.startsWith(c.getPath)
@@ -222,7 +219,7 @@ case class Requester(verb: String,
 
       connection.setRequestProperty(
         "Cookie",
-        (cookies ++ sessionCookieValues)
+        (sessionCookieValues ++ cookieValues)
           .map{case (k, v) => k + "=" + v}
           .mkString("; ")
       )
@@ -230,6 +227,7 @@ case class Requester(verb: String,
       if (onUpload != null) {
         onUpload(compress.wrap(connection.getOutputStream))
       }
+
 
       val (responseCode, responseMsg, headerFields) = try {(
         connection.getResponseCode,
@@ -272,7 +270,7 @@ case class Requester(verb: String,
         val newUrl = current.headers("location").head
         stream(
           new java.net.URL(url1, newUrl).toString, auth, params, headers, readTimeout, connectTimeout,
-          proxy, cookies, maxRedirects - 1, verifySslCerts, autoDecompress, compress, Some(current)
+          proxy, cookies, cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress, compress, Some(current)
         )(
           onUpload, onHeadersReceived, onDownload
         )
@@ -280,6 +278,7 @@ case class Requester(verb: String,
 
         if (onHeadersReceived != null) {
           onHeadersReceived(StreamHeaders(
+            url,
             responseCode,
             responseMsg,
             headerFields,
@@ -291,7 +290,7 @@ case class Requester(verb: String,
           if (connection.getResponseCode == 200) connection.getInputStream
           else connection.getErrorStream
 
-        if (onDownload != null){
+        if (stream != null && onDownload != null){
           onDownload(
             if (deGzip) new GZIPInputStream(stream)
             else if (deDeflate) new InflaterInputStream(stream)
@@ -319,6 +318,7 @@ case class Requester(verb: String,
     r.connectTimeout,
     r.proxy,
     r.cookies,
+    r.cookieValues,
     r.maxRedirects,
     r.verifySslCerts,
     r.autoDecompress,
@@ -340,6 +340,7 @@ case class Requester(verb: String,
     r.connectTimeout,
     r.proxy,
     r.cookies,
+    r.cookieValues,
     r.maxRedirects,
     r.verifySslCerts,
     r.autoDecompress,

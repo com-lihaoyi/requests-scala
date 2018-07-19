@@ -20,7 +20,7 @@ import scala.collection.mutable
   *                     redirects for you
   * @param verifySslCerts Set this to false to ignore problems with SSL certificates
   */
-case class Session(headers: Seq[(String, String)] = BaseSession.defaultHeaders,
+case class Session(headers: Map[String, String] = BaseSession.defaultHeaders,
                    cookieValues: Map[String, String] = Map(),
                    cookies: mutable.Map[String, HttpCookie] = mutable.LinkedHashMap.empty[String, HttpCookie],
                    auth: RequestAuth = RequestAuth.Empty,
@@ -31,7 +31,7 @@ case class Session(headers: Seq[(String, String)] = BaseSession.defaultHeaders,
                    connectTimeout: Int = 10 * 1000,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
-                   compress: Compress = Compress.Gzip)
+                   compress: Compress = Compress.None)
   extends BaseSession{
 
   for((k, v) <- cookieValues) cookies(k) = new HttpCookie(k, v)

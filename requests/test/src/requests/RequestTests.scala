@@ -2,7 +2,7 @@ package requests
 
 import utest._
 
-object HelloTests extends TestSuite{
+object RequestTests extends TestSuite{
   val tests = Tests{
     'matchingMethodWorks - {
       val requesters = Seq(
@@ -167,13 +167,13 @@ object HelloTests extends TestSuite{
       (res1.bytes.length, res2.bytes.length, res3.bytes.length, res4.bytes.length)
     }
     'compression - {
-      val res1 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.None).data
+      val res1 = requests.post("https://httpbin.org/post", compress = requests.Compress.None).data
       assert(res1.text.contains(""""Host":"httpbin.org""""))
 
-      val res2 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.Gzip).data
+      val res2 = requests.post("https://httpbin.org/post", compress = requests.Compress.Gzip).data
       assert(res2.text.contains(""""Host":"httpbin.org""""))
 
-      val res3 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.Deflate).data
+      val res3 = requests.post("https://httpbin.org/post", compress = requests.Compress.Deflate).data
       assert(res3.text.contains(""""Host":"httpbin.org""""))
     }
   }
