@@ -425,4 +425,35 @@ r4.data.text
 """
 ```
 
+## Why Requests-Scala?
 
+There is a whole zoo of HTTP clients in the Scala ecosystem. Akka-http, Play-WS,
+STTP, HTTP4S, Scalaj-HTTP, RosHTTP, Dispatch. Nevertheless, none of them come
+close to the ease and weightlessness of using Kenneth Reitz's
+[Requests](http://docs.python-requests.org/) library: too many implicits,
+operators, builders, monads, and other things.
+
+When I want to make a HTTP request, I do not want to know about
+`.unsafeRunSync`, infix methods like `svc OK as.String`, or define implicit
+`ActorSystem`s, `ActorMaterializer`s, and `ExecutionContext`s. So far
+[sttp](https://github.com/softwaremill/sttp) and
+[scalaj-http](https://github.com/scalaj/scalaj-http) come closest to what I
+want, but still fall short: both still use a pattern of fluent builders that to
+me doesn't fit how I think when making a HTTP request. I just want to call one
+function to make a HTTP request, and get back my HTTP response.
+
+As it turns out, Kenneth Reitz's Requests is
+[not a lot of code](https://github.com/requests/requests/tree/master/requests).
+Most of the heavy lifting is done in other libraries, and his library is a just
+thin-shim that makes the API 10x better. It turns out on the JVM most of the
+heavy lifting is also done for you, by `java.net.HttpUrlConnection` in the
+simplest case, and other libraries like
+[AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) for more
+advanced use cases.
+
+Given that's the case, how hard can it be to port over a dozen Python files to
+Scala? This library attempts to do that: class by class, method by method,
+keyword-argument by keyword-argument. Not everything has been implemented yet,
+some things differ (some avoidably, some unavoidably), and it's nowhere near as
+polished, but you should definitely try it out as the HTTP client for your next
+codebase or project!
