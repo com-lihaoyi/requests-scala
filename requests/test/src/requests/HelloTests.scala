@@ -25,42 +25,42 @@ object HelloTests extends TestSuite{
     'params - {
       'get - {
         // All in URL
-        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").data.string
+        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").data.text
         assert(res1.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // All in params
         val res2 = requests.get(
           "https://httpbin.org/get",
           params = Map("hello" -> "world", "foo" -> "baz")
-        ).data.string
+        ).data.text
         assert(res2.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // Mixed URL and params
         val res3 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("foo" -> "baz")
-        ).data.string
+        ).data.text
         assert(res3.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // Needs escaping
         val res4 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("++-- lol" -> " !@#$%")
-        ).data.string
+        ).data.text
         assert(res4.contains(""""args":{"++-- lol":" !@#$%","hello":"world""""))
       }
       'post - {
         val res1 = requests.post(
           "https://httpbin.org/post",
           data = Map("hello" -> "world", "foo" -> "baz")
-        ).data.string
+        ).data.text
         assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
       }
       'put - {
         val res1 = requests.put(
           "https://httpbin.org/put",
           data = Map("hello" -> "world", "foo" -> "baz")
-        ).data.string
+        ).data.text
         assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
       }
     }
@@ -71,7 +71,7 @@ object HelloTests extends TestSuite{
           MultiItem("file1", "Hello!".getBytes, "foo.txt"),
           MultiItem("file2", "Goodbye!")
         )
-      ).data.string
+      ).data.text
 
       assert(response.contains(""""files":{"file1":"Hello!"},"form":{"file2":"Goodbye!"}"""))
     }
@@ -79,17 +79,17 @@ object HelloTests extends TestSuite{
 
       'session - {
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
-        val res1 = s.get("https://httpbin.org/cookies").data.string.trim
+        val res1 = s.get("https://httpbin.org/cookies").data.text.trim
         assert(res1 == """{"cookies":{"hello":"world"}}""")
         s.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = s.get("https://httpbin.org/cookies").data.string.trim
+        val res2 = s.get("https://httpbin.org/cookies").data.text.trim
         assert(res2 == """{"cookies":{"freeform":"test","hello":"world"}}""")
       }
       'raw - {
-        val res1 = requests.get("https://httpbin.org/cookies").data.string.trim
+        val res1 = requests.get("https://httpbin.org/cookies").data.text.trim
         assert(res1 == """{"cookies":{}}""")
         requests.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = requests.get("https://httpbin.org/cookies").data.string.trim
+        val res2 = requests.get("https://httpbin.org/cookies").data.text.trim
         assert(res2 == """{"cookies":{}}""")
       }
     }
@@ -116,9 +116,9 @@ object HelloTests extends TestSuite{
       }
     }
     'streaming - {
-      val res1 = requests.get("http://httpbin.org/stream/5").data.string
+      val res1 = requests.get("http://httpbin.org/stream/5").data.text
       assert(res1.lines.length == 5)
-      val res2 = requests.get("http://httpbin.org/stream/52").data.string
+      val res2 = requests.get("http://httpbin.org/stream/52").data.text
       assert(res2.lines.length == 52)
     }
     'timeouts - {
@@ -153,10 +153,10 @@ object HelloTests extends TestSuite{
     }
     'decompress - {
       val res1 = requests.get("https://httpbin.org/gzip").data
-      assert(res1.string.contains(""""Host":"httpbin.org""""))
+      assert(res1.text.contains(""""Host":"httpbin.org""""))
 
       val res2 = requests.get("https://httpbin.org/deflate").data
-      assert(res2.string.contains(""""Host":"httpbin.org""""))
+      assert(res2.text.contains(""""Host":"httpbin.org""""))
 
       val res3 = requests.get("https://httpbin.org/gzip", autoDecompress = false).data
       assert(res3.bytes.length < res1.bytes.length)
@@ -168,13 +168,13 @@ object HelloTests extends TestSuite{
     }
     'compression - {
       val res1 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.None).data
-      assert(res1.string.contains(""""Host":"httpbin.org""""))
+      assert(res1.text.contains(""""Host":"httpbin.org""""))
 
       val res2 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.Gzip).data
-      assert(res2.string.contains(""""Host":"httpbin.org""""))
+      assert(res2.text.contains(""""Host":"httpbin.org""""))
 
       val res3 = requests.get("https://httpbin.org/gzip", compress = requests.Compress.Deflate).data
-      assert(res3.string.contains(""""Host":"httpbin.org""""))
+      assert(res3.text.contains(""""Host":"httpbin.org""""))
     }
   }
 }

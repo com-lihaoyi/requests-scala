@@ -51,7 +51,7 @@ case class Request(url: String,
   */
 class ResponseBlob(val bytes: Array[Byte]){
   override def toString = s"ResponseBlob(${bytes.length} bytes)"
-  def string = new String(bytes)
+  def text = new String(bytes)
 }
 
 /**
@@ -205,6 +205,10 @@ case class Response(url: String,
   def location = headers.get("Location").flatMap(_.headOption)
 }
 
+case class StreamHeaders(statusCode: Int,
+                         statusMessage: String,
+                         headers: Map[String, Seq[String]],
+                         history: Option[Response])
 /**
   * Different ways you can authorize a HTTP request; by default, HTTP Basic
   * auth and Proxy auth are supported

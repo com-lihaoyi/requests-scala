@@ -91,11 +91,11 @@ case class Requester(verb: String,
     )(
       if (data == RequestBlob.EmptyRequestBlob) null
       else upload => data.write(upload),
-      (rc, rm, hf, rf) => {
-        responseCode = rc
-        responseMessage = rm
-        headerFields = hf
-        redirectedFrom = rf
+      sh => {
+        responseCode = sh.statusCode
+        responseMessage = sh.statusMessage
+        headerFields = sh.headers
+        redirectedFrom = sh.history
         if (sess.persistCookies) {
           headerFields
             .get("Set-Cookie")
@@ -136,7 +136,8 @@ case class Requester(verb: String,
     * @param onHeadersReceived the second callback to be called, this provides
     *                          access to the response's status code, status
     *                          message, headers, and any previous re-direct
-    *                          responses.
+    *                          responses. Returns a boolean, where `false` can
+    *                          be used to
     *
     * @param onDownload the last callback to be called, this provides direct
     *                   access to the [[java.io.InputStream]] the caller can
@@ -155,9 +156,9 @@ case class Requester(verb: String,
              autoDecompress: Boolean = sess.autoDecompress,
              compress: Compress = sess.compress,
              redirectedFrom: Option[Response] = None)
-            (onUpload: java.io.OutputStream => Unit,
-             onHeadersReceived: (Int, String, Map[String, Seq[String]], Option[Response]) => Boolean,
-             onDownload: java.io.InputStream => Unit): Unit = {
+            (onUpload: java.io.OutputStream => Unit = null,
+             onHeadersReceived: StreamHeaders => Unit = null,
+             onDownload: java.io.InputStream => Unit = null): Unit = {
 
     val url0 = new java.net.URL(url)
     val encodedParams = Util.urlEncode(params)
@@ -277,17 +278,20 @@ case class Requester(verb: String,
         )
       }else{
 
-        val continue = onHeadersReceived(
-          responseCode,
-          responseMsg,
-          headerFields,
-          redirectedFrom
-        )
+        if (onHeadersReceived != null) {
+          onHeadersReceived(StreamHeaders(
+            responseCode,
+            responseMsg,
+            headerFields,
+            redirectedFrom
+          ))
+        }
 
-        if (continue) {
-          val stream =
-            if (connection.getResponseCode == 200) connection.getInputStream
-            else connection.getErrorStream
+        val stream =
+          if (connection.getResponseCode == 200) connection.getInputStream
+          else connection.getErrorStream
+
+        if (onDownload != null){
           onDownload(
             if (deGzip) new GZIPInputStream(stream)
             else if (deDeflate) new InflaterInputStream(stream)
@@ -325,9 +329,9 @@ case class Requester(verb: String,
     * Overload of [[Requester.stream]] that takes a [[Request]] object as configuration
     */
   def stream(r: Request)
-            (streamUpload: java.io.OutputStream => Unit,
-             handleHeader: (Int, String, Map[String, Seq[String]], Option[Response]) => Boolean,
-             streamDownload: java.io.InputStream => Unit): Unit = stream(
+            (onUpload: java.io.OutputStream => Unit,
+             onHeadersReceived: StreamHeaders => Unit,
+             onDownload: java.io.InputStream => Unit): Unit = stream(
     r.url,
     r.auth,
     r.params,
@@ -340,5 +344,5 @@ case class Requester(verb: String,
     r.verifySslCerts,
     r.autoDecompress,
     r.compress
-  )(streamUpload, handleHeader, streamDownload)
+  )(onUpload, onHeadersReceived, onDownload)
 }
