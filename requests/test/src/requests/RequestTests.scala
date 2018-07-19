@@ -167,14 +167,27 @@ object RequestTests extends TestSuite{
       (res1.bytes.length, res2.bytes.length, res3.bytes.length, res4.bytes.length)
     }
     'compression - {
-      val res1 = requests.post("https://httpbin.org/post", compress = requests.Compress.None).data
-      assert(res1.text.contains(""""Host":"httpbin.org""""))
+      val res1 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.None,
+        data = "Hello World"
+      )
+      assert(res1.data.text.contains(""""Hello World""""))
 
-      val res2 = requests.post("https://httpbin.org/post", compress = requests.Compress.Gzip).data
-      assert(res2.text.contains(""""Host":"httpbin.org""""))
+      val res2 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.Gzip,
+        data = "I am cow"
+      )
+      assert(res2.data.text.contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
 
-      val res3 = requests.post("https://httpbin.org/post", compress = requests.Compress.Deflate).data
-      assert(res3.text.contains(""""Host":"httpbin.org""""))
+      val res3 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.Deflate,
+        data = "Hear me moo"
+      )
+      assert(res3.data.text.contains("data:application/octet-stream;base64,eJw="))
+      res3.data.text
     }
   }
 }

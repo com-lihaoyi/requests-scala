@@ -113,7 +113,6 @@ case class Requester(verb: String,
     )
   }
 
-
   /**
     * Performs a streaming HTTP request. Most of the parameters are the same as
     * [[apply]], except that the `data` parameter is missing, and no [[Response]]

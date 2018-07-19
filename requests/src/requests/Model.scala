@@ -84,27 +84,46 @@ object RequestBlob{
   object EmptyRequestBlob extends RequestBlob{
     def write(out: java.io.OutputStream): Unit = ()
   }
+  implicit def BytesRequestBlob(x: Array[Byte]) = SizedBlob.BytesRequestBlob(x)
+  implicit def StringRequestBlob(x: String) = SizedBlob.StringRequestBlob(x)
+  implicit def FileRequestBlob(x: java.io.File) = SizedBlob.FileRequestBlob(x)
+  implicit def NioFileRequestBlob(x: java.nio.file.Path) = SizedBlob.NioFileRequestBlob(x)
   object SizedBlob{
     implicit class BytesRequestBlob(val x: Array[Byte]) extends SizedBlob{
+      override def headers = super.headers ++ Seq(
+        "Content-Type" -> "application/octed-stream",
+      )
       def length = x.length
       def write(out: java.io.OutputStream) = out.write(x)
     }
     implicit class StringRequestBlob(val x: String) extends SizedBlob{
+      override def headers = super.headers ++ Seq(
+        "Content-Type" -> "text/plain",
+      )
       val serialized = x.getBytes()
       def length = serialized.length
       def write(out: java.io.OutputStream) = out.write(serialized)
     }
     implicit class FileRequestBlob(val x: java.io.File) extends SizedBlob{
+      override def headers = super.headers ++ Seq(
+        "Content-Type" -> "application/octed-stream",
+      )
       def length = x.length()
       def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
     }
     implicit class NioFileRequestBlob(val x: java.nio.file.Path) extends SizedBlob{
+      override def headers = super.headers ++ Seq(
+        "Content-Type" -> "application/octed-stream",
+      )
       def length = java.nio.file.Files.size(x)
       def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
     }
   }
 
   implicit class InputStreamRequestBlob(val x: java.io.InputStream) extends RequestBlob{
+    override def headers = super.headers ++ Seq(
+      "Content-Type" -> "application/octed-stream",
+    )
     def write(out: java.io.OutputStream) = Util.transferTo(x, out)
   }
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends SizedBlob {
