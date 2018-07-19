@@ -17,6 +17,27 @@ intuitive, and straightforward to use.
     - [Cookies](#cookies)
     - [Redirects](#redirects)
 - [Sessions](#sessions)
+
+## Getting Started
+
+Use the following import to get you starting in an Ammonite REPL:
+
+```scala
+import $ivy.`com.lihaoyi::requests:0.1.0`
+```
+
+The following for a Mill build:
+
+```scala
+ivy"com.lihaoyi::requests:0.1.0"
+```
+
+And the following for an SBT build:
+
+```scala
+import "com.lihaoyi" %% "requests" % "0.1.0"
+```
+
 ## Making a Request
 ```scala
 val r = requests.get("https://api.github.com/users/lihaoyi")
@@ -384,7 +405,7 @@ val s = requests.Session()
 
 val r = s.get("https://httpbin.org/cookies/set?freeform=test")
 
-val r2 = s.get("https://httpbin.org/cookies", cookies = r.cookies)
+val r2 = s.get("https://httpbin.org/cookies")
 
 r2.data.text
 // {"cookies":{"freeform":"test"}}
