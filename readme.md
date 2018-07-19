@@ -23,19 +23,19 @@ intuitive, and straightforward to use.
 Use the following import to get you starting in an Ammonite REPL:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.0`
+import $ivy.`com.lihaoyi::requests:0.1.1`
 ```
 
 The following for a Mill build:
 
 ```scala
-ivy"com.lihaoyi::requests:0.1.0"
+ivy"com.lihaoyi::requests:0.1.1"
 ```
 
 And the following for an SBT build:
 
 ```scala
-import "com.lihaoyi" %% "requests" % "0.1.0"
+import "com.lihaoyi" %% "requests" % "0.1.1"
 ```
 
 ## Making a Request
@@ -172,7 +172,12 @@ Together, these three callbacks should make it easy for you to work with data
 too big to fit in memory, while still benefiting from most of Requests' friendly
 & intuitive API.
 
-```
+Note that streaming upload using `.stream`, and streaming upload using `data =
+is: java.io.InputStream`, relies on
+[chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding),
+a feature not fully supported by all HTTP servers. If your server doesn't
+support it, fall back to buffering your data in memory and using `data = is:
+Array[Byte]` to upload it.
 
 ## Handling JSON
 
@@ -319,6 +324,14 @@ requests.get("https://httpbin.org/deflate").data.bytes.length
 requests.get("https://httpbin.org/deflate", autoDecompress=false).data.bytes.length
 // 188
 ```
+
+Note that by default, compression of fixed-size in-memory input (`String`s,
+`Array[Byte]`s, ...) buffers up the compressed data in memory before uploading
+it. Compression of unknown-length/not-in-memory data (files, `InputStream`s,
+...) doesn't perform this buffering and uses chunked transfer encoding, as
+normal. If you want to avoid buffering in memory and are willing to use chunked
+transfer encoding for in-memory data, wrap it in an inputstream (e.g.
+`Array[Byte]` can be wrapped in a `ByteArrayInputStream`)
 
 ### Cookies
 

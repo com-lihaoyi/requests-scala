@@ -83,9 +83,15 @@ case class Requester(verb: String,
     val out = new ByteArrayOutputStream()
     var streamHeaders: StreamHeaders = null
 
+    val totalSize = data match{
+      case s: RequestBlob.SizedBlob => s.length
+      case RequestBlob.EmptyRequestBlob => 0
+      case _ => -1
+    }
     stream(
-      url, auth, params, data.headers ++ headers, readTimeout, connectTimeout,
-      proxy, cookies, cookieValues, maxRedirects, verifySslCerts, autoDecompress, compress
+      url, auth, params, data.headers ++ headers, readTimeout,
+      connectTimeout, proxy, cookies, cookieValues, maxRedirects,
+      verifySslCerts, autoDecompress, compress, totalSize, data.inMemory
     )(
       if (data == RequestBlob.EmptyRequestBlob) null
       else upload => data.write(upload),
@@ -99,7 +105,6 @@ case class Requester(verb: String,
             .flatMap(HttpCookie.parse(_).asScala)
             .foreach(c => sess.cookies(c.getName) = c)
         }
-        true
       },
       download => Util.transferTo(download, out)
     )
@@ -150,6 +155,8 @@ case class Requester(verb: String,
              verifySslCerts: Boolean = sess.verifySslCerts,
              autoDecompress: Boolean = sess.autoDecompress,
              compress: Compress = sess.compress,
+             totalSize: Long = -1,
+             inMemory: Boolean = true,
              redirectedFrom: Option[Response] = None)
             (onUpload: java.io.OutputStream => Unit = null,
              onHeadersReceived: StreamHeaders => Unit = null,
@@ -164,7 +171,6 @@ case class Requester(verb: String,
         val firstSep = if (url0.getQuery != null) "&" else "?"
         new java.net.URL(url + firstSep + encodedParams)
       }
-
 
     var connection: HttpURLConnection = null
 
@@ -193,6 +199,7 @@ case class Requester(verb: String,
           c
         case c: HttpURLConnection => c
       }
+
 
 
       connection.setInstanceFollowRedirects(false)
@@ -224,9 +231,34 @@ case class Requester(verb: String,
       )
 
       if (onUpload != null) {
-        onUpload(compress.wrap(connection.getOutputStream))
-      }
+        if (inMemory && compress != Compress.None){
+          // For in-memory data inputs we want to compress, we buffer the
+          // compressed output in-memory as well before uploading it. This lets
+          // us avoid using chunked transfer encoding, for data which we already
+          // had in memory and can probably pay the cost of buffering.
+          //
+          // For non-in-memory data inputs, we were already probably going to use
+          // chunked transfer encoding anyway, so we just use that and can skip
+          // the buffering.
+          //
+          // The only exception is known-size on-disk files, which uncompressed
+          // get uploaded via content-length upload but compressed used chunked
+          // transfer encoding. There isn't really any good way around this,
+          // short of pre-compressing the file on disk, if we assume some files
+          // are too big to fit in memory
+          val bytes = new ByteArrayOutputStream()
+          onUpload(compress.wrap(bytes))
+          val byteArray = bytes.toByteArray
+          connection.setFixedLengthStreamingMode(byteArray.length)
+          println(byteArray.length)
+          connection.getOutputStream.write(byteArray)
+        }else{
+          if (totalSize > 0) connection.setFixedLengthStreamingMode(totalSize)
+          else if (totalSize < 0) connection.setChunkedStreamingMode(0)
 
+          onUpload(compress.wrap(connection.getOutputStream))
+        }
+      }
 
       val (responseCode, responseMsg, headerFields) = try {(
         connection.getResponseCode,
@@ -268,8 +300,10 @@ case class Requester(verb: String,
         }
         val newUrl = current.headers("location").head
         stream(
-          new java.net.URL(url1, newUrl).toString, auth, params, headers, readTimeout, connectTimeout,
-          proxy, cookies, cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress, compress, Some(current)
+          new java.net.URL(url1, newUrl).toString, auth, params,
+          headers, readTimeout, connectTimeout, proxy, cookies,
+          cookieValues, maxRedirects - 1, verifySslCerts,
+          autoDecompress, compress, totalSize, inMemory, Some(current)
         )(
           onUpload, onHeadersReceived, onDownload
         )
@@ -327,7 +361,7 @@ case class Requester(verb: String,
   /**
     * Overload of [[Requester.stream]] that takes a [[Request]] object as configuration
     */
-  def stream(r: Request)
+  def stream(r: Request, totalSize: Long, inMemory: Boolean)
             (onUpload: java.io.OutputStream => Unit,
              onHeadersReceived: StreamHeaders => Unit,
              onDownload: java.io.InputStream => Unit): Unit = stream(
@@ -343,6 +377,8 @@ case class Requester(verb: String,
     r.maxRedirects,
     r.verifySslCerts,
     r.autoDecompress,
-    r.compress
+    r.compress,
+    totalSize,
+    inMemory
   )(onUpload, onHeadersReceived, onDownload)
 }

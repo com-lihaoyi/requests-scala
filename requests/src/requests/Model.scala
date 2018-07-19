@@ -72,6 +72,7 @@ class ResponseBlob(val bytes: Array[Byte]){
   */
 trait RequestBlob{
   def headers: Seq[(String, String)] = Nil
+  def inMemory: Boolean
   def write(out: java.io.OutputStream): Unit
 }
 object RequestBlob{
@@ -82,6 +83,7 @@ object RequestBlob{
     def length: Long
   }
   object EmptyRequestBlob extends RequestBlob{
+    def inMemory = true
     def write(out: java.io.OutputStream): Unit = ()
   }
   implicit def BytesRequestBlob(x: Array[Byte]) = SizedBlob.BytesRequestBlob(x)
@@ -90,6 +92,7 @@ object RequestBlob{
   implicit def NioFileRequestBlob(x: java.nio.file.Path) = SizedBlob.NioFileRequestBlob(x)
   object SizedBlob{
     implicit class BytesRequestBlob(val x: Array[Byte]) extends SizedBlob{
+      def inMemory = true
       override def headers = super.headers ++ Seq(
         "Content-Type" -> "application/octed-stream"
       )
@@ -97,6 +100,7 @@ object RequestBlob{
       def write(out: java.io.OutputStream) = out.write(x)
     }
     implicit class StringRequestBlob(val x: String) extends SizedBlob{
+      def inMemory = true
       override def headers = super.headers ++ Seq(
         "Content-Type" -> "text/plain"
       )
@@ -105,6 +109,7 @@ object RequestBlob{
       def write(out: java.io.OutputStream) = out.write(serialized)
     }
     implicit class FileRequestBlob(val x: java.io.File) extends SizedBlob{
+      def inMemory = false
       override def headers = super.headers ++ Seq(
         "Content-Type" -> "application/octed-stream"
       )
@@ -112,6 +117,7 @@ object RequestBlob{
       def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
     }
     implicit class NioFileRequestBlob(val x: java.nio.file.Path) extends SizedBlob{
+      def inMemory = false
       override def headers = super.headers ++ Seq(
         "Content-Type" -> "application/octed-stream"
       )
@@ -121,12 +127,14 @@ object RequestBlob{
   }
 
   implicit class InputStreamRequestBlob(val x: java.io.InputStream) extends RequestBlob{
+    def inMemory = false
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octed-stream"
     )
     def write(out: java.io.OutputStream) = Util.transferTo(x, out)
   }
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends SizedBlob {
+    def inMemory = true
     val serialized = Util.urlEncode(x).getBytes
     def length = serialized.length
     override def headers = super.headers ++ Seq(
@@ -138,6 +146,7 @@ object RequestBlob{
   }
 
   implicit class MultipartFormRequestBlob(val parts: Iterable[MultiItem]) extends RequestBlob{
+    def inMemory = true
     val boundary = UUID.randomUUID().toString
     val crlf = "\r\n"
     val pref = "--"
