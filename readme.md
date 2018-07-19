@@ -3,7 +3,7 @@
 Requests-Scala is a Scala port of the popular Python
 [Requests](http://docs.python-requests.org/) HTTP client. Requests-Scala aims to
 provide the same API and user-experience as the original Requests: flexible,
-intuitive, and incredible straightforward to use.
+intuitive, and straightforward to use.
 
 - [Making a Request](#making-a-request)
     - [Passing in Parameters](#passing-in-parameters)
