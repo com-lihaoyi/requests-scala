@@ -23,19 +23,19 @@ intuitive, and straightforward to use.
 Use the following import to get you starting in an Ammonite REPL:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.1`
+import $ivy.`com.lihaoyi::requests:0.1.2`
 ```
 
 The following for a Mill build:
 
 ```scala
-ivy"com.lihaoyi::requests:0.1.1"
+ivy"com.lihaoyi::requests:0.1.2"
 ```
 
 And the following for an SBT build:
 
 ```scala
-import "com.lihaoyi" %% "requests" % "0.1.1"
+import "com.lihaoyi" %% "requests" % "0.1.2"
 ```
 
 ## Making a Request
@@ -48,7 +48,7 @@ r.statusCode
 r.headers("content-type")
 // Buffer("application/json; charset=utf-8")
 
-r.data.text
+r.text
 // {"login":"lihaoyi","id":934140,"node_id":"MDQ6VXNlcjkzNDE0MA==",...
 ```
 
@@ -116,15 +116,15 @@ metadata of your HTTP response. The response data is in the `.data` field of the
 property as shown below:
 
 ```scala
-r.data.text
+r.text
 // [{"id":"7990061484","type":"PushEvent","actor":{"id":6242317,"login":...
 ```
 
-If you want the raw bytes of the response, use `r.data.bytes`
+If you want the raw bytes of the response, use `r.content`
 
 
 ```scala
-r.data.bytes
+r.content
 // Array(91, 123, 34, 105, 100, 34, 58, 34, 55, 57,  57, 48, 48, 54, 49, ...
 ```
 
@@ -205,7 +205,7 @@ the server:
 ```scala
 val r = requests.get("https://api.github.com/events")
 
-val json = ujson.read(r.data.text)
+val json = ujson.read(r.text)
 
 json.arr.length
 // 30
@@ -311,17 +311,17 @@ the `autoCompress` parameter, in case you want the un-compressed data blob for
 whatever reason:
 
 ```scala
-requests.get("https://httpbin.org/gzip").data.bytes.length
+requests.get("https://httpbin.org/gzip").content.length
 // 250
 
-requests.get("https://httpbin.org/gzip", autoDecompress=false).data.bytes.length
+requests.get("https://httpbin.org/gzip", autoDecompress=false).content.length
 // 201
 
 
-requests.get("https://httpbin.org/deflate").data.bytes.length
+requests.get("https://httpbin.org/deflate").content.length
 // 251
 
-requests.get("https://httpbin.org/deflate", autoDecompress=false).data.bytes.length
+requests.get("https://httpbin.org/deflate", autoDecompress=false).content.length
 // 188
 ```
 
@@ -348,7 +348,7 @@ r.cookies
 
 val r2 = requests.get("https://httpbin.org/cookies", cookies = r.cookies)
 
-r2.data.text
+r2.text
 // {"cookies":{"freeform":"test"}}
 ```
 
@@ -420,7 +420,7 @@ val r = s.get("https://httpbin.org/cookies/set?freeform=test")
 
 val r2 = s.get("https://httpbin.org/cookies")
 
-r2.data.text
+r2.text
 // {"cookies":{"freeform":"test"}}
 ```
 
@@ -439,22 +439,22 @@ val s = requests.Session(
 
 val r1 = requests.get("https://httpbin.org/cookies")
 
-r1.data.text
+r1.text
 // {"cookies":{"cookie":"vanilla"}}
 
 val r2 = requests.get("https://httpbin.org/cookies")
 
-r1.data.text
+r1.text
 // {"cookies":{"cookie":"vanilla"}}
 
 val r3 = s.get("https://httpbin.org/headers")
 
-r3.data.text
+r3.text
 // {"headers":{"X-Special-Header":"omg", ...}}
 
 val r4 = s.get("https://httpbin.org/headers")
 
-r4.data.text
+r4.text
 // {"headers":{"X-Special-Header":"omg", ...}}
 """
 ```

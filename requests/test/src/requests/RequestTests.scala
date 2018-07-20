@@ -25,42 +25,42 @@ object RequestTests extends TestSuite{
     'params - {
       'get - {
         // All in URL
-        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").data.text
+        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").text
         assert(res1.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // All in params
         val res2 = requests.get(
           "https://httpbin.org/get",
           params = Map("hello" -> "world", "foo" -> "baz")
-        ).data.text
+        ).text
         assert(res2.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // Mixed URL and params
         val res3 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("foo" -> "baz")
-        ).data.text
+        ).text
         assert(res3.contains(""""args":{"foo":"baz","hello":"world"}"""))
 
         // Needs escaping
         val res4 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("++-- lol" -> " !@#$%")
-        ).data.text
+        ).text
         assert(res4.contains(""""args":{"++-- lol":" !@#$%","hello":"world""""))
       }
       'post - {
         val res1 = requests.post(
           "https://httpbin.org/post",
           data = Map("hello" -> "world", "foo" -> "baz")
-        ).data.text
+        ).text
         assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
       }
       'put - {
         val res1 = requests.put(
           "https://httpbin.org/put",
           data = Map("hello" -> "world", "foo" -> "baz")
-        ).data.text
+        ).text
         assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
       }
     }
@@ -71,7 +71,7 @@ object RequestTests extends TestSuite{
           MultiItem("file1", "Hello!".getBytes, "foo.txt"),
           MultiItem("file2", "Goodbye!")
         )
-      ).data.text
+      ).text
 
       assert(response.contains(""""files":{"file1":"Hello!"},"form":{"file2":"Goodbye!"}"""))
     }
@@ -79,17 +79,17 @@ object RequestTests extends TestSuite{
 
       'session - {
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
-        val res1 = s.get("https://httpbin.org/cookies").data.text.trim
+        val res1 = s.get("https://httpbin.org/cookies").text.trim
         assert(res1 == """{"cookies":{"hello":"world"}}""")
         s.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = s.get("https://httpbin.org/cookies").data.text.trim
+        val res2 = s.get("https://httpbin.org/cookies").text.trim
         assert(res2 == """{"cookies":{"freeform":"test","hello":"world"}}""")
       }
       'raw - {
-        val res1 = requests.get("https://httpbin.org/cookies").data.text.trim
+        val res1 = requests.get("https://httpbin.org/cookies").text.trim
         assert(res1 == """{"cookies":{}}""")
         requests.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = requests.get("https://httpbin.org/cookies").data.text.trim
+        val res2 = requests.get("https://httpbin.org/cookies").text.trim
         assert(res2 == """{"cookies":{}}""")
       }
     }
@@ -116,9 +116,9 @@ object RequestTests extends TestSuite{
       }
     }
     'streaming - {
-      val res1 = requests.get("http://httpbin.org/stream/5").data.text
+      val res1 = requests.get("http://httpbin.org/stream/5").text
       assert(res1.lines.length == 5)
-      val res2 = requests.get("http://httpbin.org/stream/52").data.text
+      val res2 = requests.get("http://httpbin.org/stream/52").text
       assert(res2.lines.length == 52)
     }
     'timeouts - {
@@ -172,22 +172,22 @@ object RequestTests extends TestSuite{
         compress = requests.Compress.None,
         data = "Hello World"
       )
-      assert(res1.data.text.contains(""""Hello World""""))
+      assert(res1.text.contains(""""Hello World""""))
 
       val res2 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Gzip,
         data = "I am cow"
       )
-      assert(res2.data.text.contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
+      assert(res2.text.contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
 
       val res3 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Deflate,
         data = "Hear me moo"
       )
-      assert(res3.data.text.contains("data:application/octet-stream;base64,eJw="))
-      res3.data.text
+      assert(res3.text.contains("data:application/octet-stream;base64,eJw="))
+      res3.text
     }
   }
 }

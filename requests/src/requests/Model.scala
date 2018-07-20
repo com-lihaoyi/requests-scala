@@ -6,6 +6,7 @@ import java.util.UUID
 
 import collection.JavaConverters._
 import java.io.OutputStream
+import java.nio.charset.Charset
 import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
 
 /**
@@ -54,14 +55,6 @@ case class Request(url: String,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
                    compress: Compress = Compress.None)
-
-/**
-  * Wraps the array of bytes returned in the body of a HTTP response
-  */
-class ResponseBlob(val bytes: Array[Byte]){
-  override def toString = s"ResponseBlob(${bytes.length} bytes)"
-  def text = new String(bytes)
-}
 
 /**
   * Represents the different things you can upload in the body of a HTTP
@@ -213,6 +206,22 @@ case class MultiItem(name: String,
                      filename: String = null)
 
 /**
+  * Wraps the array of bytes returned in the body of a HTTP response
+  */
+class ResponseBlob(val bytes: Array[Byte]){
+  override def toString = s"ResponseBlob(${bytes.length} bytes)"
+  def text = new String(bytes)
+
+  override def hashCode() = java.util.Arrays.hashCode(bytes)
+
+  override def equals(obj: scala.Any) = obj match{
+    case r: ResponseBlob => java.util.Arrays.equals(bytes, r.bytes)
+    case _ => false
+  }
+}
+
+
+/**
   * Represents a HTTP response
   *
   * @param url the URL that the original request was made to
@@ -230,6 +239,22 @@ case class Response(url: String,
                     data: ResponseBlob,
                     history: Option[Response]){
 
+  /**
+    * Decodes the byte contents of this response as a String using the default charset
+    */
+  def text() = new String(data.bytes)
+  /**
+    * Decodes the byte contents of this response as a String using the given charset
+    */
+  def text(cs: Charset) = new String(data.bytes, cs)
+  /**
+    * Returns the byte contents of this response
+    */
+  def contents = data.bytes
+
+  /**
+    * Returns the cookies set by this response, and by any redirects that lead up to it
+    */
   val cookies: Map[String, HttpCookie] = history.toSeq.flatMap(_.cookies).toMap ++ headers
     .get("set-cookie")
     .iterator
@@ -239,7 +264,15 @@ case class Response(url: String,
     .toMap
 
   def contentType = headers.get("content-type").flatMap(_.headOption)
+
+  def contentLength = headers.get("content-length").flatMap(_.headOption)
+
   def location = headers.get("location").flatMap(_.headOption)
+
+  def is2xx = statusCode.toString.head == '2'
+  def is3xx = statusCode.toString.head == '3'
+  def is4xx = statusCode.toString.head == '4'
+  def is5xx = statusCode.toString.head == '5'
 }
 
 case class StreamHeaders(url: String,
