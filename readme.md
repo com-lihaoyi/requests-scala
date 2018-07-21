@@ -19,6 +19,7 @@ intuitive, and straightforward to use.
     - [Cookies](#cookies)
     - [Redirects](#redirects)
 - [Sessions](#sessions)
+- [Why Requests-Scala?](#why-requests-scala)
 
 ## Getting Started
 
@@ -477,6 +478,121 @@ When I want to make a HTTP request, I do not want to know about
 want, but still fall short: both still use a pattern of fluent builders that to
 me doesn't fit how I think when making a HTTP request. I just want to call one
 function to make a HTTP request, and get back my HTTP response.
+
+Most people will never reach the scale that asynchrony matters, and most of
+those who do reach that scale will only need it in a small number of specialized
+places, not everywhere.
+
+Compare the getting-started code necessary for Requests-Scala against some other
+common Scala HTTP clients:
+```scala
+// Requests-Scala
+val r = requests.get(
+  "https://api.github.com/search/repositories", 
+  params = Map("q" -> "http language:scala", "sort" -> None)
+)
+
+r.text
+// {"login":"lihaoyi","id":934140,"node_id":"MDQ6VXNlcjkzNDE0MA==",...
+```
+```scala
+// Akka-Http
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.stream.ActorMaterializer
+
+import scala.concurrent.Future
+import scala.util.{ Failure, Success }
+
+implicit val system = ActorSystem()
+implicit val materializer = ActorMaterializer()
+// needed for the future flatMap/onComplete in the end
+implicit val executionContext = system.dispatcher
+
+val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+
+responseFuture
+  .onComplete {
+    case Success(res) => println(res)
+    case Failure(_)   => sys.error("something wrong")
+  }
+
+```
+
+```scala
+// Play-WS
+
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import play.api.libs.ws._
+import play.api.libs.ws.ahc._
+
+import scala.concurrent.Future
+
+import DefaultBodyReadables._
+import scala.concurrent.ExecutionContext.Implicits._
+
+// Create Akka system for thread and streaming management
+implicit val system = ActorSystem()
+implicit val materializer = ActorMaterializer()
+
+// Create the standalone WS client
+// no argument defaults to a AhcWSClientConfig created from
+// "AhcWSClientConfigFactory.forConfig(ConfigFactory.load, this.getClass.getClassLoader)"
+val wsClient = StandaloneAhcWSClient()
+
+wsClient.url("http://www.google.com").get()
+  .map { response ⇒
+    val statusText: String = response.statusText
+    val body = response.body[String]
+    println(s"Got a response $statusText")
+  }.
+  andThen { case _ => wsClient.close() }
+  andThen { case _ => system.terminate() }
+
+```
+```scala
+// Http4s
+import org.http4s.client.dsl.io._
+import org.http4s.headers._
+import org.http4s.MediaType
+
+val request = GET(
+  Uri.uri("https://my-lovely-api.com/"),
+  Authorization(Credentials.Token(AuthScheme.Bearer, "open sesame")),
+  Accept(MediaType.application.json)
+)
+
+httpClient.expect[String](request)
+```
+```scala
+// sttp
+import com.softwaremill.sttp._
+
+val sort: Option[String] = None
+val query = "http language:scala"
+
+// the `query` parameter is automatically url-encoded
+// `sort` is removed, as the value is not defined
+val request = sttp.get(uri"https://api.github.com/search/repositories?q=$query&sort=$sort")
+  
+implicit val backend = HttpURLConnectionBackend()
+val response = request.send()
+
+// response.unsafeBody: by default read into a String 
+println(response.unsafeBody)                     
+```
+```dispatch
+import dispatch._, Defaults._
+val svc = url("http://api.hostip.info/country.php")
+val country = Http.default(svc OK as.String)
+```
+
+The existing clients require a complex mix of imports, implicits, operators, and
+DSLs. The goal of Requests-Scala is to do away with all of that: your HTTP
+request is just a function call that takes parameters; that is all you need to
+know.
 
 As it turns out, Kenneth Reitz's Requests is
 [not a lot of code](https://github.com/requests/requests/tree/master/requests).
