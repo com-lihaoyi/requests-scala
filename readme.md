@@ -38,7 +38,7 @@ ivy"com.lihaoyi::requests:0.1.2"
 And the following for an SBT build:
 
 ```scala
-import "com.lihaoyi" %% "requests" % "0.1.2"
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.2"
 ```
 
 ## Making a Request
