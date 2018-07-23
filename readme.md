@@ -489,7 +489,7 @@ common Scala HTTP clients:
 // Requests-Scala
 val r = requests.get(
   "https://api.github.com/search/repositories", 
-  params = Map("q" -> "http language:scala", "sort" -> None)
+  params = Map("q" -> "http language:scala", "sort" -> "stars")
 )
 
 r.text
