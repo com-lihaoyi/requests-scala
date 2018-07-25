@@ -38,7 +38,7 @@ ivy"com.lihaoyi::requests:0.1.2"
 And the following for an SBT build:
 
 ```scala
-import "com.lihaoyi" %% "requests" % "0.1.2"
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.2"
 ```
 
 ## Making a Request
@@ -489,7 +489,7 @@ common Scala HTTP clients:
 // Requests-Scala
 val r = requests.get(
   "https://api.github.com/search/repositories", 
-  params = Map("q" -> "http language:scala", "sort" -> None)
+  params = Map("q" -> "http language:scala", "sort" -> "stars")
 )
 
 r.text
