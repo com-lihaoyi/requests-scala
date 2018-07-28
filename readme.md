@@ -94,7 +94,7 @@ val r = requests.put("http://httpbin.org/put", data = Map("key" -> "value"))
 Apart from POSTing key-value pairs, you can also POST `String`s, `Array[Byte]`s,
 `java.io.File`s, `java.nio.file.Path`s, and `requests.MultiPart` uploads:
 
-```
+```scala
 requests.post("https://httpbin.org/post", data = "Hello World")
 requests.post("https://httpbin.org/post", data = Array[Byte](1, 2, 3))
 requests.post("https://httpbin.org/post", data = new java.io.File("thing.json"))
@@ -583,7 +583,8 @@ val response = request.send()
 // response.unsafeBody: by default read into a String 
 println(response.unsafeBody)                     
 ```
-```dispatch
+```scala
+// Dispatch
 import dispatch._, Defaults._
 val svc = url("http://api.hostip.info/country.php")
 val country = Http.default(svc OK as.String)
