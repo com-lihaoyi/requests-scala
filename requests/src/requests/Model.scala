@@ -294,9 +294,9 @@ object RequestAuth{
   }
   implicit def implicitBasic(x: (String, String)) = new Basic(x._1, x._2)
   class Basic(username: String, password: String) extends RequestAuth{
-    def header = Some("Basic " + java.util.Base64.getEncoder.encode((username + ":" + password).getBytes()))
+    def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
   case class Proxy(username: String, password: String) extends RequestAuth{
-    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encode((username + ":" + password).getBytes()))
+    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
 }

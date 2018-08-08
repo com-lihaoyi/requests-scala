@@ -26,19 +26,19 @@ intuitive, and straightforward to use.
 Use the following import to get you starting in an Ammonite REPL:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.2`
+import $ivy.`com.lihaoyi::requests:0.1.3`
 ```
 
 The following for a Mill build:
 
 ```scala
-ivy"com.lihaoyi::requests:0.1.2"
+ivy"com.lihaoyi::requests:0.1.3"
 ```
 
 And the following for an SBT build:
 
 ```scala
-libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.2"
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.3"
 ```
 
 ## Making a Request
