@@ -161,7 +161,7 @@ requests.get.stream("https://api.github.com/events")(
   a raw `java.io.OutputStream` to write to, and can easily upload data from
   memory, files, network, or any other data source.
 
-- `onHeadersReceived is called after any upload is complete but before download
+- `onHeadersReceived` is called after any upload is complete but before download
   starts: this gives you the metadata present in the header of the HTTP
   response, but without the `data` field (which you will have access to download
   later)
