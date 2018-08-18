@@ -4,7 +4,7 @@ import scalalib._
 
 object requests extends Cross[RequestsModule]("2.11.12", "2.12.6")
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
-  def publishVersion = "0.1.2"
+  def publishVersion = "0.1.4"
   def artifactName = "requests"
   def pomSettings = PomSettings(
     description = "Hello",
