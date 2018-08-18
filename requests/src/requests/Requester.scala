@@ -163,14 +163,12 @@ case class Requester(verb: String,
              onDownload: java.io.InputStream => Unit = null): Unit = {
 
     val url0 = new java.net.URL(url)
-    val encodedParams = Util.urlEncode(params)
 
-    val url1 =
-      if (verb == "POST") url0
-      else {
-        val firstSep = if (url0.getQuery != null) "&" else "?"
-        new java.net.URL(url + firstSep + encodedParams)
-      }
+    val url1 = if (verb != "POST" && params.nonEmpty) {
+      val encodedParams = Util.urlEncode(params)
+      val firstSep = if (url0.getQuery != null) "&" else "?"
+      new java.net.URL(url + firstSep + encodedParams)
+    } else url0
 
     var connection: HttpURLConnection = null
 
