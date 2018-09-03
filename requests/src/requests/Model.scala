@@ -54,7 +54,8 @@ case class Request(url: String,
                    maxRedirects: Int = 5,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
-                   compress: Compress = Compress.None)
+                   compress: Compress = Compress.None,
+                   keepAlive: Boolean = true)
 
 /**
   * Represents the different things you can upload in the body of a HTTP

@@ -79,7 +79,8 @@ case class Requester(verb: String,
             maxRedirects: Int = sess.maxRedirects,
             verifySslCerts: Boolean = sess.verifySslCerts,
             autoDecompress: Boolean = sess.autoDecompress,
-            compress: Compress = sess.compress): Response = {
+            compress: Compress = sess.compress,
+            keepAlive: Boolean = true): Response = {
     val out = new ByteArrayOutputStream()
     var streamHeaders: StreamHeaders = null
 
@@ -91,7 +92,7 @@ case class Requester(verb: String,
     stream(
       url, auth, params, data.headers ++ headers, readTimeout,
       connectTimeout, proxy, cookies, cookieValues, maxRedirects,
-      verifySslCerts, autoDecompress, compress, totalSize, data.inMemory
+      verifySslCerts, autoDecompress, compress, keepAlive, totalSize, data.inMemory
     )(
       if (data == RequestBlob.EmptyRequestBlob) null
       else upload => data.write(upload),
@@ -155,6 +156,7 @@ case class Requester(verb: String,
              verifySslCerts: Boolean = sess.verifySslCerts,
              autoDecompress: Boolean = sess.autoDecompress,
              compress: Compress = sess.compress,
+             keepAlive: Boolean = true,
              totalSize: Long = -1,
              inMemory: Boolean = true,
              redirectedFrom: Option[Response] = None)
@@ -301,7 +303,7 @@ case class Requester(verb: String,
           new java.net.URL(url1, newUrl).toString, auth, params,
           headers, readTimeout, connectTimeout, proxy, cookies,
           cookieValues, maxRedirects - 1, verifySslCerts,
-          autoDecompress, compress, totalSize, inMemory, Some(current)
+          autoDecompress, compress, keepAlive, totalSize, inMemory, Some(current)
         )(
           onUpload, onHeadersReceived, onDownload
         )
@@ -322,16 +324,14 @@ case class Requester(verb: String,
           else connection.getErrorStream
 
         if (stream != null && onDownload != null){
-          onDownload(
+          try onDownload(
             if (deGzip) new GZIPInputStream(stream)
             else if (deDeflate) new InflaterInputStream(stream)
             else stream
-          )
+          ) finally if (!keepAlive) stream.close()
         }
       }
-
-
-    } finally if (connection != null) {
+    } finally if (!keepAlive && connection != null) {
       connection.disconnect()
     }
   }
@@ -353,7 +353,8 @@ case class Requester(verb: String,
     r.maxRedirects,
     r.verifySslCerts,
     r.autoDecompress,
-    r.compress
+    r.compress,
+    r.keepAlive
   )
 
   /**
@@ -376,6 +377,7 @@ case class Requester(verb: String,
     r.verifySslCerts,
     r.autoDecompress,
     r.compress,
+    r.keepAlive,
     totalSize,
     inMemory
   )(onUpload, onHeadersReceived, onDownload)
