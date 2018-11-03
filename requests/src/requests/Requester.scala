@@ -320,7 +320,7 @@ case class Requester(verb: String,
         }
 
         val stream =
-          if (connection.getResponseCode == 200) connection.getInputStream
+          if (Seq(200, 201).contains(connection.getResponseCode)) connection.getInputStream
           else connection.getErrorStream
 
         if (stream != null && onDownload != null){
