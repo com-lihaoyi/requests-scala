@@ -7,11 +7,11 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
   def publishVersion = "0.1.5"
   def artifactName = "requests"
   def pomSettings = PomSettings(
-    description = "Hello",
+    description = "Scala port of the popular Python Requests HTTP client",
     organization = "com.lihaoyi",
     url = "https://github.com/lihaoyi/requests",
     licenses = Seq(License.MIT),
-    versionControl = VersionControl.github("lihaoyi", "example"),
+    versionControl = VersionControl.github("lihaoyi", "requests-scala"),
     developers = Seq(
       Developer("lihaoyi", "Li Haoyi","https://github.com/lihaoyi")
     )
