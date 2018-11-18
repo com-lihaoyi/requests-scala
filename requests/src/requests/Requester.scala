@@ -94,7 +94,7 @@ case class Requester(verb: String,
       connectTimeout, proxy, cookies, cookieValues, maxRedirects,
       verifySslCerts, autoDecompress, compress, keepAlive, totalSize, data.inMemory
     )(
-      if (data == RequestBlob.EmptyRequestBlob) null
+      if (totalSize == 0) null
       else upload => data.write(upload),
       sh => {
         streamHeaders = sh
@@ -250,14 +250,16 @@ case class Requester(verb: String,
           onUpload(compress.wrap(bytes))
           val byteArray = bytes.toByteArray
           connection.setFixedLengthStreamingMode(byteArray.length)
-          println(byteArray.length)
           connection.getOutputStream.write(byteArray)
         }else{
-          if (totalSize > 0) connection.setFixedLengthStreamingMode(totalSize)
+          if (totalSize >= 0) connection.setFixedLengthStreamingMode(totalSize)
           else if (totalSize < 0) connection.setChunkedStreamingMode(0)
 
           onUpload(compress.wrap(connection.getOutputStream))
         }
+      }else if(verb.toUpperCase == "POST" || verb.toUpperCase == "PUT"){
+          require(totalSize <= 0, "totalSize should not be greater than zero if onUpload is null")
+          connection.setFixedLengthStreamingMode(0)
       }
 
       val (responseCode, responseMsg, headerFields) = try {(
