@@ -166,7 +166,7 @@ case class Requester(verb: String,
 
     val url0 = new java.net.URL(url)
 
-    val url1 = if (verb != "POST" && params.nonEmpty) {
+    val url1 = if (params.nonEmpty) {
       val encodedParams = Util.urlEncode(params)
       val firstSep = if (url0.getQuery != null) "&" else "?"
       new java.net.URL(url + firstSep + encodedParams)
