@@ -610,3 +610,15 @@ keyword-argument by keyword-argument. Not everything has been implemented yet,
 some things differ (some avoidably, some unavoidably), and it's nowhere near as
 polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
+
+## Changelog
+
+### 0.1.6
+
+- Allow POSTs to take URL parameters
+- Return response body for all 2xx response codes
+- Always set `Content-Length` to 0 when request body is empty
+
+### 0.1.5
+
+- First Release
