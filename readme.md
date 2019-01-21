@@ -613,6 +613,10 @@ codebase or project!
 
 ## Changelog
 
+### 0.1.7
+
+- `RequestBlob` headers no longer over-write session headers
+
 ### 0.1.6
 
 - Allow POSTs to take URL parameters
