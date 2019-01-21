@@ -1,6 +1,7 @@
 package requests
 
 import utest._
+import ujson._
 
 object RequestTests extends TestSuite{
   val tests = Tests{
@@ -26,42 +27,42 @@ object RequestTests extends TestSuite{
       'get - {
         // All in URL
         val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").text
-        assert(res1.contains(""""args":{"foo":"baz","hello":"world"}"""))
+        assert(read(res1).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // All in params
         val res2 = requests.get(
           "https://httpbin.org/get",
           params = Map("hello" -> "world", "foo" -> "baz")
         ).text
-        assert(res2.contains(""""args":{"foo":"baz","hello":"world"}"""))
+        assert(read(res2).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // Mixed URL and params
         val res3 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("foo" -> "baz")
         ).text
-        assert(res3.contains(""""args":{"foo":"baz","hello":"world"}"""))
+        assert(read(res3).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // Needs escaping
         val res4 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("++-- lol" -> " !@#$%")
         ).text
-        assert(res4.contains(""""args":{"++-- lol":" !@#$%","hello":"world""""))
+        assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
       'post - {
         val res1 = requests.post(
           "https://httpbin.org/post",
           data = Map("hello" -> "world", "foo" -> "baz")
         ).text
-        assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
+        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
       }
       'put - {
         val res1 = requests.put(
           "https://httpbin.org/put",
           data = Map("hello" -> "world", "foo" -> "baz")
         ).text
-        assert(res1.contains(""""form":{"foo":"baz","hello":"world"}"""))
+        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
       }
     }
     'multipart - {
@@ -73,24 +74,25 @@ object RequestTests extends TestSuite{
         )
       ).text
 
-      assert(response.contains(""""files":{"file1":"Hello!"},"form":{"file2":"Goodbye!"}"""))
+      assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
+      assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
     }
     'cookies - {
 
       'session - {
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
         val res1 = s.get("https://httpbin.org/cookies").text.trim
-        assert(res1 == """{"cookies":{"hello":"world"}}""")
+        assert(read(res1) == Obj("cookies" -> Obj("hello" -> "world")))
         s.get("https://httpbin.org/cookies/set?freeform=test")
         val res2 = s.get("https://httpbin.org/cookies").text.trim
-        assert(res2 == """{"cookies":{"freeform":"test","hello":"world"}}""")
+        assert(read(res2) == Obj("cookies" -> Obj("freeform" -> "test", "hello" -> "world")))
       }
       'raw - {
         val res1 = requests.get("https://httpbin.org/cookies").text.trim
-        assert(res1 == """{"cookies":{}}""")
+        assert(read(res1) == Obj("cookies" -> Obj()))
         requests.get("https://httpbin.org/cookies/set?freeform=test")
         val res2 = requests.get("https://httpbin.org/cookies").text.trim
-        assert(res2 == """{"cookies":{}}""")
+        assert(read(res2) == Obj("cookies" -> Obj()))
       }
     }
     'redirects - {
@@ -144,7 +146,7 @@ object RequestTests extends TestSuite{
         requests.get("https://doesnt-exist-at-all.com/")
       }
       intercept[InvalidCertException]{
-        requests.get("https://doesnt-exist.com/")
+        requests.get("https://expired.badssl.com/")
       }
       requests.get("https://doesnt-exist.com/", verifySslCerts = false)
       intercept[java.net.MalformedURLException]{
@@ -153,10 +155,10 @@ object RequestTests extends TestSuite{
     }
     'decompress - {
       val res1 = requests.get("https://httpbin.org/gzip").data
-      assert(res1.text.contains(""""Host":"httpbin.org""""))
+      assert(read(res1.text).obj("headers").obj("Host").str == "httpbin.org")
 
       val res2 = requests.get("https://httpbin.org/deflate").data
-      assert(res2.text.contains(""""Host":"httpbin.org""""))
+      assert(read(res2.text).obj("headers").obj("Host").str == "httpbin.org")
 
       val res3 = requests.get("https://httpbin.org/gzip", autoDecompress = false).data
       assert(res3.bytes.length < res1.bytes.length)
