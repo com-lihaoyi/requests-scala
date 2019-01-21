@@ -90,7 +90,7 @@ case class Requester(verb: String,
       case _ => -1
     }
     stream(
-      url, auth, params, data.headers ++ headers, readTimeout,
+      url, auth, params, data.headers, headers, readTimeout,
       connectTimeout, proxy, cookies, cookieValues, maxRedirects,
       verifySslCerts, autoDecompress, compress, keepAlive, totalSize, data.inMemory
     )(
@@ -146,6 +146,7 @@ case class Requester(verb: String,
   def stream(url: String,
              auth: RequestAuth = sess.auth,
              params: Iterable[(String, String)] = Nil,
+             blobHeaders: Iterable[(String, String)] = Nil,
              headers: Iterable[(String, String)] = Nil,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
@@ -204,6 +205,8 @@ case class Requester(verb: String,
 
       connection.setInstanceFollowRedirects(false)
       connection.setRequestMethod(verb.toUpperCase)
+      for((k, v) <- blobHeaders) connection.setRequestProperty(k, v)
+
       for((k, v) <- sess.headers) connection.setRequestProperty(k, v)
 
       for((k, v) <- headers) connection.setRequestProperty(k, v)
@@ -302,7 +305,7 @@ case class Requester(verb: String,
         }
         val newUrl = current.headers("location").head
         stream(
-          new java.net.URL(url1, newUrl).toString, auth, params,
+          new java.net.URL(url1, newUrl).toString, auth, params, blobHeaders,
           headers, readTimeout, connectTimeout, proxy, cookies,
           cookieValues, maxRedirects - 1, verifySslCerts,
           autoDecompress, compress, keepAlive, totalSize, inMemory, Some(current)
@@ -369,6 +372,7 @@ case class Requester(verb: String,
     r.url,
     r.auth,
     r.params,
+    Seq.empty[(String, String)],
     r.headers,
     r.readTimeout,
     r.connectTimeout,
