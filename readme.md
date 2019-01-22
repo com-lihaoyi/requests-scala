@@ -7,6 +7,10 @@ Requests-Scala is a Scala port of the popular Python
 provide the same API and user-experience as the original Requests: flexible,
 intuitive, and straightforward to use.
 
+If you use Requests-Scala and like it, please support it by donating to our Patreon:
+
+- [https://www.patreon.com/lihaoyi](https://www.patreon.com/lihaoyi)
+
 - [Making a Request](#making-a-request)
     - [Passing in Parameters](#passing-in-parameters)
     - [Response Content](#response-content)
