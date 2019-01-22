@@ -11,6 +11,9 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 
 - [https://www.patreon.com/lihaoyi](https://www.patreon.com/lihaoyi)
 
+
+## Contents
+
 - [Making a Request](#making-a-request)
     - [Passing in Parameters](#passing-in-parameters)
     - [Response Content](#response-content)
