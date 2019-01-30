@@ -300,4 +300,7 @@ object RequestAuth{
   case class Proxy(username: String, password: String) extends RequestAuth{
     def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
+  case class Bearer(token: String) extends RequestAuth {
+    def header = Some(s"Bearer $token")
+  }
 }
