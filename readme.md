@@ -447,24 +447,14 @@ val s = requests.Session(
   cookieValues = Map("cookie" -> "vanilla")
 )
 
-val r1 = requests.get("https://httpbin.org/cookies")
+val r1 = s.get("https://httpbin.org/cookies")
 
 r1.text
 // {"cookies":{"cookie":"vanilla"}}
 
-val r2 = requests.get("https://httpbin.org/cookies")
+val r2 = s.get("https://httpbin.org/headers")
 
-r1.text
-// {"cookies":{"cookie":"vanilla"}}
-
-val r3 = s.get("https://httpbin.org/headers")
-
-r3.text
-// {"headers":{"X-Special-Header":"omg", ...}}
-
-val r4 = s.get("https://httpbin.org/headers")
-
-r4.text
+r2.text
 // {"headers":{"X-Special-Header":"omg", ...}}
 """
 ```
