@@ -270,7 +270,7 @@ case class Requester(verb: String,
         connection.getResponseMessage,
         connection.getHeaderFields.asScala
           .filter(_._1 != null)
-          .map{case (k, v) => (k.toLowerCase(), v.asScala)}.toMap
+          .map{case (k, v) => (k.toLowerCase(), v.asScala.toSeq)}.toMap
       )} catch{
         case e: java.net.SocketTimeoutException =>
           throw new TimeoutException(url, readTimeout, connectTimeout)
