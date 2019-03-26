@@ -226,12 +226,15 @@ case class Requester(verb: String,
         if c.getPath == null || url1.getPath.startsWith(c.getPath)
       } yield (c.getName, c.getValue)
 
-      connection.setRequestProperty(
-        "Cookie",
-        (sessionCookieValues ++ cookieValues)
-          .map{case (k, v) => k + "=" + v}
-          .mkString("; ")
-      )
+      val allCookies = sessionCookieValues ++ cookieValues
+      if (allCookies.nonEmpty){
+        connection.setRequestProperty(
+          "Cookie",
+          allCookies
+            .map{case (k, v) => k + "=" + v}
+            .mkString("; ")
+        )
+      }
 
       if (onUpload != null) {
         if (inMemory && compress != Compress.None){
