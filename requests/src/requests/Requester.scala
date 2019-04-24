@@ -73,7 +73,7 @@ case class Requester(verb: String,
             data: RequestBlob = RequestBlob.EmptyRequestBlob,
             readTimeout: Int = sess.readTimeout,
             connectTimeout: Int = sess.connectTimeout,
-            proxy: (String, Int) = null,
+            proxy: (String, Int) = sess.proxy,
             cookies: Map[String, HttpCookie] = Map(),
             cookieValues: Map[String, String] = Map(),
             maxRedirects: Int = sess.maxRedirects,
@@ -96,17 +96,7 @@ case class Requester(verb: String,
     )(
       if (totalSize == 0) null
       else upload => data.write(upload),
-      sh => {
-        streamHeaders = sh
-        if (sess.persistCookies) {
-          streamHeaders.headers
-            .get("set-cookie")
-            .iterator
-            .flatten
-            .flatMap(HttpCookie.parse(_).asScala)
-            .foreach(c => sess.cookies(c.getName) = c)
-        }
-      },
+      sh => streamHeaders = sh,
       download => Util.transferTo(download, out)
     )
     Response(
@@ -150,7 +140,7 @@ case class Requester(verb: String,
              headers: Iterable[(String, String)] = Nil,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
-             proxy: (String, Int) = null,
+             proxy: (String, Int) = sess.proxy,
              cookies: Map[String, HttpCookie] = Map(),
              cookieValues: Map[String, String] = Map(),
              maxRedirects: Int = sess.maxRedirects,
@@ -316,6 +306,15 @@ case class Requester(verb: String,
           onUpload, onHeadersReceived, onDownload
         )
       }else{
+
+        if (sess.persistCookies) {
+          headerFields
+            .get("set-cookie")
+            .iterator
+            .flatten
+            .flatMap(HttpCookie.parse(_).asScala)
+            .foreach(c => sess.cookies(c.getName) = c)
+        }
 
         if (onHeadersReceived != null) {
           onHeadersReceived(StreamHeaders(
