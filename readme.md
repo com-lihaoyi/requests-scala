@@ -33,19 +33,26 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 Use the following import to get you starting in an Ammonite REPL:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.7`
+import $ivy.`com.lihaoyi::requests:0.1.8`
 ```
 
 The following for a Mill build:
 
 ```scala
-ivy"com.lihaoyi::requests:0.1.7"
+ivy"com.lihaoyi::requests:0.1.8"
 ```
 
 And the following for an SBT build:
 
 ```scala
-libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.7"
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.8"
+```
+
+Finally, for gradle
+
+
+```groovy
+compile "com.lihaoyi:requests_2.12:0.1.8"
 ```
 
 ## Making a Request
