@@ -119,9 +119,9 @@ object RequestTests extends TestSuite{
     }
     'streaming - {
       val res1 = requests.get("http://httpbin.org/stream/5").text
-      assert(res1.lines.length == 5)
+      assert(res1.linesIterator.length == 5)
       val res2 = requests.get("http://httpbin.org/stream/52").text
-      assert(res2.lines.length == 52)
+      assert(res2.linesIterator.length == 52)
     }
     'timeouts - {
       'read - {

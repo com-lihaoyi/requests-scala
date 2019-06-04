@@ -620,6 +620,14 @@ codebase or project!
 
 ## Changelog
 
+### 0.1.9
+
+- Support `PATCH` and other verbs
+
+### 0.1.8
+
+- Support for `Bearer` token auth
+
 ### 0.1.7
 
 - `RequestBlob` headers no longer over-write session headers

@@ -28,6 +28,8 @@ trait BaseSession{
   lazy val delete = Requester("DELETE", this)
   lazy val head = Requester("HEAD", this)
   lazy val options = Requester("OPTIONS", this)
+  // unoficial
+  lazy val patch = Requester("PATCH", this)
 }
 
 object BaseSession{
@@ -38,7 +40,14 @@ object BaseSession{
     "Accept" -> "*/*"
   )
 }
-
+object Requester{
+  val officialHttpMethods = Set("GET", "POST", "HEAD", "OPTIONS", "PUT", "DELETE", "TRACE")
+  private lazy val methodField: java.lang.reflect.Field = {
+    val m = classOf[HttpURLConnection].getDeclaredField("method")
+    m.setAccessible(true)
+    m
+  }
+}
 case class Requester(verb: String,
                      sess: BaseSession){
 
@@ -204,7 +213,23 @@ case class Requester(verb: String,
 
 
       connection.setInstanceFollowRedirects(false)
-      connection.setRequestMethod(verb.toUpperCase)
+      val upperCaseVerb = verb.toUpperCase
+      if (Requester.officialHttpMethods.contains(upperCaseVerb)) {
+        connection.setRequestMethod(upperCaseVerb)
+      } else {
+        // HttpURLConnection enforces a list of official http METHODs, but not everyone abides by the spec
+        // this hack allows us set an unofficial http method
+        connection match {
+          case cs: HttpsURLConnection =>
+            cs.getClass.getDeclaredFields.find(_.getName == "delegate").foreach{ del =>
+              del.setAccessible(true)
+              Requester.methodField.set(del.get(cs), upperCaseVerb)
+            }
+          case c =>
+            Requester.methodField.set(c, upperCaseVerb)
+        }
+      }
+
       for((k, v) <- blobHeaders) connection.setRequestProperty(k, v)
 
       for((k, v) <- sess.headers) connection.setRequestProperty(k, v)
