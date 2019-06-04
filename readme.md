@@ -33,19 +33,26 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 Use the following import to get you starting in an Ammonite REPL:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.7`
+import $ivy.`com.lihaoyi::requests:0.1.8`
 ```
 
 The following for a Mill build:
 
 ```scala
-ivy"com.lihaoyi::requests:0.1.7"
+ivy"com.lihaoyi::requests:0.1.8"
 ```
 
 And the following for an SBT build:
 
 ```scala
-libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.7"
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.8"
+```
+
+Finally, for gradle
+
+
+```groovy
+compile "com.lihaoyi:requests_2.12:0.1.8"
 ```
 
 ## Making a Request
@@ -447,24 +454,14 @@ val s = requests.Session(
   cookieValues = Map("cookie" -> "vanilla")
 )
 
-val r1 = requests.get("https://httpbin.org/cookies")
+val r1 = s.get("https://httpbin.org/cookies")
 
 r1.text
 // {"cookies":{"cookie":"vanilla"}}
 
-val r2 = requests.get("https://httpbin.org/cookies")
+val r2 = s.get("https://httpbin.org/headers")
 
-r1.text
-// {"cookies":{"cookie":"vanilla"}}
-
-val r3 = s.get("https://httpbin.org/headers")
-
-r3.text
-// {"headers":{"X-Special-Header":"omg", ...}}
-
-val r4 = s.get("https://httpbin.org/headers")
-
-r4.text
+r2.text
 // {"headers":{"X-Special-Header":"omg", ...}}
 """
 ```

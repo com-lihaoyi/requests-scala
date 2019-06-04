@@ -191,5 +191,18 @@ object RequestTests extends TestSuite{
       assert(res3.text.contains("data:application/octet-stream;base64,eJw="))
       res3.text
     }
+    'headers - {
+      'default - {
+        val res = requests.get("https://httpbin.org/headers").text
+        val hs = read(res)("headers").obj
+        assert(hs("User-Agent").str == "requests-scala")
+        assert(hs("Accept-Encoding").str == "gzip, deflate")
+        assert(hs("Pragma").str == "no-cache")
+        assert(hs("Accept").str == "*/*")
+        'hasNoCookie - {
+          assert(hs.get("Cookie").isEmpty)
+        }
+      }
+    }
   }
 }
