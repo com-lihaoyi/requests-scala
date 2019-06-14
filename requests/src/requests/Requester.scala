@@ -28,7 +28,7 @@ trait BaseSession{
   lazy val delete = Requester("DELETE", this)
   lazy val head = Requester("HEAD", this)
   lazy val options = Requester("OPTIONS", this)
-  // unoficial
+  // unofficial
   lazy val patch = Requester("PATCH", this)
 }
 
