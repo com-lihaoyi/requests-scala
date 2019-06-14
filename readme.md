@@ -30,29 +30,12 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 
 ## Getting Started
 
-Use the following import to get you starting in an Ammonite REPL:
+Use the following import to get you started:
 
 ```scala
-import $ivy.`com.lihaoyi::requests:0.1.8`
-```
-
-The following for a Mill build:
-
-```scala
-ivy"com.lihaoyi::requests:0.1.8"
-```
-
-And the following for an SBT build:
-
-```scala
-libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.8"
-```
-
-Finally, for gradle
-
-
-```groovy
-compile "com.lihaoyi:requests_2.12:0.1.8"
+ivy"com.lihaoyi::requests:0.2.0" // mill
+"com.lihaoyi" %% "requests" % "0.2.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.2.0" //gradle
 ```
 
 ## Making a Request
@@ -616,6 +599,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.2.0
+
+- Support for Scala 2.13.0 final
 
 ### 0.1.9
 
