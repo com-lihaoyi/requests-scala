@@ -49,6 +49,7 @@ case class Request(url: String,
                    readTimeout: Int = 0,
                    connectTimeout: Int = 0,
                    proxy: (String, Int) = null,
+                   cert: Cert = null,
                    cookies: Map[String, HttpCookie] = Map(),
                    cookieValues: Map[String, String] = Map(),
                    maxRedirects: Int = 5,
@@ -304,3 +305,5 @@ object RequestAuth{
     def header = Some(s"Bearer $token")
   }
 }
+
+case class Cert(cert: String, key: String, keyPassword: Option[String] = None)

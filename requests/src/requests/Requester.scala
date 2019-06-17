@@ -17,6 +17,7 @@ trait BaseSession{
   def connectTimeout: Int
   def auth: RequestAuth
   def proxy: (String, Int)
+  def cert: Cert
   def maxRedirects: Int
   def persistCookies: Boolean
   def verifySslCerts: Boolean
@@ -83,6 +84,7 @@ case class Requester(verb: String,
             readTimeout: Int = sess.readTimeout,
             connectTimeout: Int = sess.connectTimeout,
             proxy: (String, Int) = sess.proxy,
+            cert: Cert = sess.cert,
             cookies: Map[String, HttpCookie] = Map(),
             cookieValues: Map[String, String] = Map(),
             maxRedirects: Int = sess.maxRedirects,
@@ -100,7 +102,7 @@ case class Requester(verb: String,
     }
     stream(
       url, auth, params, data.headers, headers, readTimeout,
-      connectTimeout, proxy, cookies, cookieValues, maxRedirects,
+      connectTimeout, proxy, cert, cookies, cookieValues, maxRedirects,
       verifySslCerts, autoDecompress, compress, keepAlive, totalSize, data.inMemory
     )(
       if (totalSize == 0) null
@@ -150,6 +152,7 @@ case class Requester(verb: String,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
              proxy: (String, Int) = sess.proxy,
+             cert: Cert = sess.cert,
              cookies: Map[String, HttpCookie] = Map(),
              cookieValues: Map[String, String] = Map(),
              maxRedirects: Int = sess.maxRedirects,
@@ -190,11 +193,9 @@ case class Requester(verb: String,
         case c: HttpsURLConnection =>
           if (!verifySslCerts) {
             c.setSSLSocketFactory(Util.noVerifySocketFactory)
-            c.setHostnameVerifier(
-              new javax.net.ssl.HostnameVerifier {
-                override def verify(s: String, sslSession: SSLSession) = true
-              }
-            )
+            c.setHostnameVerifier((_: String, _: SSLSession) => true)
+          } else if (cert != null) {
+            c.setSSLSocketFactory(Util.clientCertSocketFactory(cert))
           }
           c
         case c: HttpURLConnection => c
@@ -324,7 +325,7 @@ case class Requester(verb: String,
         val newUrl = current.headers("location").head
         stream(
           new java.net.URL(url1, newUrl).toString, auth, params, blobHeaders,
-          headers, readTimeout, connectTimeout, proxy, cookies,
+          headers, readTimeout, connectTimeout, proxy, cert, cookies,
           cookieValues, maxRedirects - 1, verifySslCerts,
           autoDecompress, compress, keepAlive, totalSize, inMemory, Some(current)
         )(
@@ -380,6 +381,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.cert,
     r.cookies,
     r.cookieValues,
     r.maxRedirects,
@@ -404,6 +406,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.cert,
     r.cookies,
     r.cookieValues,
     r.maxRedirects,

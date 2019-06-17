@@ -1,10 +1,10 @@
 package requests
 
-import java.io.{InputStream, OutputStream}
+import java.io.{FileInputStream, InputStream, OutputStream}
 import java.net.URLEncoder
 import java.security.cert.X509Certificate
 
-import javax.net.ssl.{SSLContext, TrustManager, X509TrustManager}
+import javax.net.ssl.{KeyManagerFactory, SSLContext, SSLSocketFactory, TrustManager, X509TrustManager}
 
 object Util {
   def transferTo(is: InputStream,
@@ -40,6 +40,24 @@ object Util {
     val sc = SSLContext.getInstance("SSL")
     sc.init(null, trustAllCerts, new java.security.SecureRandom())
 
+    sc.getSocketFactory
+  }
+
+  private[requests] def clientCertSocketFactory(cert: Cert): SSLSocketFactory = {
+    import java.security.KeyStore
+
+    val keyManagers = {
+      val ks = KeyStore.getInstance("PKCS12")
+      val pass = cert.keyPassword.map(_.toCharArray).getOrElse(Array.emptyCharArray)
+      ks.load(new FileInputStream(cert.key), pass)
+      val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+      keyManager.init(ks, pass)
+      keyManager.getKeyManagers
+    }
+
+    val sc = SSLContext.getInstance("SSL")
+
+    sc.init(keyManagers,  null, new java.security.SecureRandom())
     sc.getSocketFactory
   }
 }

@@ -11,6 +11,8 @@ package object requests extends _root_.requests.BaseSession {
 
   def proxy = null
 
+  def cert: Cert = null
+
   def maxRedirects: Int = 5
 
   def persistCookies = false
