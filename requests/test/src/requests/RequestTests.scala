@@ -209,21 +209,14 @@ object RequestTests extends TestSuite{
       'passwordProtected - {
         val res = requests.get(
           "https://client.badssl.com",
-          cert = Cert(
-            cert = s"$base/badssl.com-client.cer",
-            key = s"$base/badssl.com-client.p12",
-            keyPassword = Some("badssl.com")
-          )
+          cert = (s"$base/badssl.com-client.p12", "badssl.com")
         )
         assert(res.statusCode == 200)
       }
       'noPassword - {
         val res = requests.get(
           "https://client.badssl.com",
-          cert = Cert(
-            cert = s"$base/badssl.com-client.cer",
-            key = s"$base/badssl.com-client-nopass.p12"
-          )
+          cert = s"$base/badssl.com-client-nopass.p12"
         )
         assert(res.statusCode == 200)
       }

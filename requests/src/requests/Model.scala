@@ -306,4 +306,9 @@ object RequestAuth{
   }
 }
 
-case class Cert(cert: String, key: String, keyPassword: Option[String] = None)
+sealed trait Cert
+object Cert{
+  implicit def implicitP12(path: String) = P12(path, None)
+  implicit def implicitP12(x: (String, String)) = P12(x._1, Some(x._2))
+  case class P12(p12: String, pwd: Option[String] = None) extends Cert
+}

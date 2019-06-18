@@ -27,14 +27,6 @@ object Util {
   }
 
   private[requests] val noVerifySocketFactory = {
-    val trustAllCerts = Array[TrustManager](new X509TrustManager() {
-      def getAcceptedIssuers() = new Array[X509Certificate](0)
-
-      def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}
-
-      def checkServerTrusted(chain: Array[X509Certificate], authType: String) = {}
-    })
-
     // Install the all-trusting trust manager
 
     val sc = SSLContext.getInstance("SSL")
@@ -43,21 +35,32 @@ object Util {
     sc.getSocketFactory
   }
 
-  private[requests] def clientCertSocketFactory(cert: Cert): SSLSocketFactory = {
-    import java.security.KeyStore
+  private[requests] def clientCertSocketFactory(cert: Cert, verifySslCerts: Boolean) = cert match {
+    case Cert.P12(path, password) =>
 
-    val keyManagers = {
-      val ks = KeyStore.getInstance("PKCS12")
-      val pass = cert.keyPassword.map(_.toCharArray).getOrElse(Array.emptyCharArray)
-      ks.load(new FileInputStream(cert.key), pass)
-      val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-      keyManager.init(ks, pass)
-      keyManager.getKeyManagers
-    }
+      val pass = password.map(_.toCharArray).getOrElse(Array.emptyCharArray)
 
-    val sc = SSLContext.getInstance("SSL")
+      val keyManagers = {
+        val ks = java.security.KeyStore.getInstance("PKCS12")
+        ks.load(new FileInputStream(path), pass)
+        val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+        keyManager.init(ks, pass)
+        keyManager.getKeyManagers
+      }
 
-    sc.init(keyManagers,  null, new java.security.SecureRandom())
-    sc.getSocketFactory
+      val sc = SSLContext.getInstance("SSL")
+
+      val trustManagers = if (verifySslCerts) null else trustAllCerts
+
+      sc.init(keyManagers, trustManagers, new java.security.SecureRandom())
+      sc.getSocketFactory
   }
+
+  private val trustAllCerts = Array[TrustManager](new X509TrustManager() {
+    def getAcceptedIssuers() = new Array[X509Certificate](0)
+
+    def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}
+
+    def checkServerTrusted(chain: Array[X509Certificate], authType: String) = {}
+  })
 }

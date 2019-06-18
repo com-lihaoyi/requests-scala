@@ -191,11 +191,12 @@ case class Requester(verb: String,
 
       connection = conn match{
         case c: HttpsURLConnection =>
-          if (!verifySslCerts) {
+          if (cert != null) {
+            c.setSSLSocketFactory(Util.clientCertSocketFactory(cert, verifySslCerts))
+            if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+          } else if (!verifySslCerts) {
             c.setSSLSocketFactory(Util.noVerifySocketFactory)
             c.setHostnameVerifier((_: String, _: SSLSession) => true)
-          } else if (cert != null) {
-            c.setSSLSocketFactory(Util.clientCertSocketFactory(cert))
           }
           c
         case c: HttpURLConnection => c
