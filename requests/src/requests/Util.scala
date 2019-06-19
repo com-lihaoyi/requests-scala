@@ -56,7 +56,7 @@ object Util {
       sc.getSocketFactory
   }
 
-  private val trustAllCerts = Array[TrustManager](new X509TrustManager() {
+  private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {
     def getAcceptedIssuers() = new Array[X509Certificate](0)
 
     def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}

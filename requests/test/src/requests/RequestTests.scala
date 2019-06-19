@@ -227,5 +227,12 @@ object RequestTests extends TestSuite{
         assert(res.statusCode == 400)
       }
     }
+    'selfSignedCertificate - {
+      val res = requests.get(
+        "https://self-signed.badssl.com",
+        verifySslCerts = false
+      )
+      assert(res.statusCode == 200)
+    }
   }
 }
