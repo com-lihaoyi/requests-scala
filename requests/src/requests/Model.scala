@@ -68,69 +68,45 @@ trait RequestBlob{
   def headers: Seq[(String, String)] = Nil
   def inMemory: Boolean
   def write(out: java.io.OutputStream): Unit
+  def length: Option[Long]
 }
 object RequestBlob{
-  trait SizedBlob extends RequestBlob{
-    override def headers: Seq[(String, String)] = Seq(
-      "Content-Length" -> length.toString
-    )
-    def length: Long
-  }
   object EmptyRequestBlob extends RequestBlob{
     def inMemory = true
     def write(out: java.io.OutputStream): Unit = ()
-  }
-  implicit def BytesRequestBlob(x: Array[Byte]) = SizedBlob.BytesRequestBlob(x)
-  implicit def StringRequestBlob(x: String) = SizedBlob.StringRequestBlob(x)
-  implicit def FileRequestBlob(x: java.io.File) = SizedBlob.FileRequestBlob(x)
-  implicit def NioFileRequestBlob(x: java.nio.file.Path) = SizedBlob.NioFileRequestBlob(x)
-  object SizedBlob{
-    implicit class BytesRequestBlob(val x: Array[Byte]) extends SizedBlob{
-      def inMemory = true
-      override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream"
-      )
-      def length = x.length
-      def write(out: java.io.OutputStream) = out.write(x)
-    }
-    implicit class StringRequestBlob(val x: String) extends SizedBlob{
-      def inMemory = true
-      override def headers = super.headers ++ Seq(
-        "Content-Type" -> "text/plain"
-      )
-      val serialized = x.getBytes()
-      def length = serialized.length
-      def write(out: java.io.OutputStream) = out.write(serialized)
-    }
-    implicit class FileRequestBlob(val x: java.io.File) extends SizedBlob{
-      def inMemory = false
-      override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream"
-      )
-      def length = x.length()
-      def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
-    }
-    implicit class NioFileRequestBlob(val x: java.nio.file.Path) extends SizedBlob{
-      def inMemory = false
-      override def headers = super.headers ++ Seq(
-        "Content-Type" -> "application/octed-stream"
-      )
-      def length = java.nio.file.Files.size(x)
-      def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
-    }
+    def length = Some(0)
   }
 
-  implicit class InputStreamRequestBlob(val x: java.io.InputStream) extends RequestBlob{
+  implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
+    private[this] val s = f(x)
+    def inMemory = true
+    override def headers = super.headers ++ Seq(
+      "Content-Type" -> "application/octet-stream"
+    )
+    def length = None
+    def write(out: java.io.OutputStream) = s.writeBytesTo(out)
+  }
+  implicit class FileRequestBlob(x: java.io.File) extends RequestBlob{
     def inMemory = false
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octed-stream"
+      "Content-Type" -> "application/octet-stream"
     )
-    def write(out: java.io.OutputStream) = Util.transferTo(x, out)
+    def length = Some(x.length())
+    def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
-  implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends SizedBlob {
+  implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob{
+    def inMemory = false
+    override def headers = super.headers ++ Seq(
+      "Content-Type" -> "application/octet-stream"
+    )
+    def length = Some(java.nio.file.Files.size(x))
+    def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
+  }
+
+  implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends RequestBlob{
     def inMemory = true
     val serialized = Util.urlEncode(x).getBytes
-    def length = serialized.length
+    def length = Some(serialized.length)
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/x-www-form-urlencoded"
     )
@@ -152,30 +128,10 @@ object RequestBlob{
 
     val partBytes = parts.map(p => (p.name.getBytes(), if (p.filename == null) Array[Byte]() else p.filename.getBytes(), p))
 
-    // we need to pre-calculate the Content-Length of this HttpRequest because most servers don't
-    // support chunked transfer
-    val totalBytesToSend: Long = {
-
-      val partsLength = partBytes.map{
-        case (name, filename, part) =>
-          pref.length + boundary.length + crlf.length +
-          ContentDisposition.length +
-          name.length +
-          (if(filename.nonEmpty) filenameSnippet.length + filename.length else 0) +
-          "\"".length + crlf.length + crlf.length +
-          part.data.length +
-          crlf.length
-      }
-      val finaleBoundaryLength = (pref.length * 2) + boundary.length + crlf.length
-
-      partsLength.sum + finaleBoundaryLength
-    }
-
     override def headers = Seq(
-      "Content-Type" -> s"multipart/form-data; boundary=$boundary",
-      "Content-Length" -> totalBytesToSend.toString
+      "Content-Type" -> s"multipart/form-data; boundary=$boundary"
     )
-
+    def length = None
     def write(out: java.io.OutputStream) = {
       def writeBytes(s: String): Unit = out.write(s.getBytes())
 
@@ -203,7 +159,7 @@ object RequestBlob{
 
 case class MultiPart(items: MultiItem*) extends RequestBlob.MultipartFormRequestBlob(items)
 case class MultiItem(name: String,
-                     data: RequestBlob.SizedBlob,
+                     data: RequestBlob,
                      filename: String = null)
 
 /**

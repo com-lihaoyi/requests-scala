@@ -4,7 +4,7 @@ import scalalib._
 
 object requests extends Cross[RequestsModule]("2.12.6", "2.13.0")
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
-  def publishVersion = "0.2.0"
+  def publishVersion = "0.3.0"
   def artifactName = "requests"
   def pomSettings = PomSettings(
     description = "Scala port of the popular Python Requests HTTP client",
@@ -15,6 +15,9 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
     developers = Seq(
       Developer("lihaoyi", "Li Haoyi","https://github.com/lihaoyi")
     )
+  )
+  def ivyDeps = Agg(
+    ivy"com.lihaoyi::geny::0.2.0"
   )
   object test extends Tests{
     def ivyDeps = Agg(

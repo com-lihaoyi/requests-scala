@@ -93,11 +93,7 @@ case class Requester(verb: String,
     val out = new ByteArrayOutputStream()
     var streamHeaders: StreamHeaders = null
 
-    val totalSize = data match{
-      case s: RequestBlob.SizedBlob => s.length
-      case RequestBlob.EmptyRequestBlob => 0
-      case _ => -1
-    }
+    val totalSize = data.length.getOrElse(-1L)
     stream(
       url, auth, params, data.headers, headers, readTimeout,
       connectTimeout, proxy, cookies, cookieValues, maxRedirects,

@@ -33,9 +33,9 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.2.0" // mill
-"com.lihaoyi" %% "requests" % "0.2.0" // sbt
-compile "com.lihaoyi:requests_2.12:0.2.0" //gradle
+ivy"com.lihaoyi::requests:0.3.0" // mill
+"com.lihaoyi" %% "requests" % "0.3.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.3.0" //gradle
 ```
 
 ## Making a Request
@@ -599,6 +599,12 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.3.0
+
+- Support for uploading
+  [geny.Writable](https://github.com/lihaoyi/geny#writable) data types in
+  request bodies.
 
 ### 0.2.0
 
