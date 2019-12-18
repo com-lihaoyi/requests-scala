@@ -11,6 +11,9 @@ If you use Requests-Scala and like it, please support it by donating to our Patr
 
 - [https://www.patreon.com/lihaoyi](https://www.patreon.com/lihaoyi)
 
+For a hands-on introduction to this library, take a look at the following blog post:
+
+- [How to work with HTTP JSON APIs in Scala](http://www.lihaoyi.com/post/HowtoworkwithHTTPJSONAPIsinScala.html)
 
 ## Contents
 
