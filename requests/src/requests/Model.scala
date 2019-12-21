@@ -43,7 +43,7 @@ object Compress{
   * [[Request]].
   */
 case class Request(url: String,
-                   auth: RequestAuth = null,
+                   auth: RequestAuth = RequestAuth.Empty,
                    params: Iterable[(String, String)] = Nil,
                    headers: Iterable[(String, String)] = Nil,
                    readTimeout: Int = 0,
