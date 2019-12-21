@@ -49,6 +49,7 @@ case class Request(url: String,
                    readTimeout: Int = 0,
                    connectTimeout: Int = 0,
                    proxy: (String, Int) = null,
+                   cert: Cert = null,
                    cookies: Map[String, HttpCookie] = Map(),
                    cookieValues: Map[String, String] = Map(),
                    maxRedirects: Int = 5,
@@ -259,4 +260,11 @@ object RequestAuth{
   case class Bearer(token: String) extends RequestAuth {
     def header = Some(s"Bearer $token")
   }
+}
+
+sealed trait Cert
+object Cert{
+  implicit def implicitP12(path: String) = P12(path, None)
+  implicit def implicitP12(x: (String, String)) = P12(x._1, Some(x._2))
+  case class P12(p12: String, pwd: Option[String] = None) extends Cert
 }

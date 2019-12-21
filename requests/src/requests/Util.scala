@@ -1,10 +1,10 @@
 package requests
 
-import java.io.{InputStream, OutputStream}
+import java.io.{FileInputStream, InputStream, OutputStream}
 import java.net.URLEncoder
 import java.security.cert.X509Certificate
 
-import javax.net.ssl.{SSLContext, TrustManager, X509TrustManager}
+import javax.net.ssl.{KeyManagerFactory, SSLContext, SSLSocketFactory, TrustManager, X509TrustManager}
 
 object Util {
   def transferTo(is: InputStream,
@@ -27,14 +27,6 @@ object Util {
   }
 
   private[requests] val noVerifySocketFactory = {
-    val trustAllCerts = Array[TrustManager](new X509TrustManager() {
-      def getAcceptedIssuers() = new Array[X509Certificate](0)
-
-      def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}
-
-      def checkServerTrusted(chain: Array[X509Certificate], authType: String) = {}
-    })
-
     // Install the all-trusting trust manager
 
     val sc = SSLContext.getInstance("SSL")
@@ -42,4 +34,33 @@ object Util {
 
     sc.getSocketFactory
   }
+
+  private[requests] def clientCertSocketFactory(cert: Cert, verifySslCerts: Boolean) = cert match {
+    case Cert.P12(path, password) =>
+
+      val pass = password.map(_.toCharArray).getOrElse(Array.emptyCharArray)
+
+      val keyManagers = {
+        val ks = java.security.KeyStore.getInstance("PKCS12")
+        ks.load(new FileInputStream(path), pass)
+        val keyManager = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+        keyManager.init(ks, pass)
+        keyManager.getKeyManagers
+      }
+
+      val sc = SSLContext.getInstance("SSL")
+
+      val trustManagers = if (verifySslCerts) null else trustAllCerts
+
+      sc.init(keyManagers, trustManagers, new java.security.SecureRandom())
+      sc.getSocketFactory
+  }
+
+  private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {
+    def getAcceptedIssuers() = new Array[X509Certificate](0)
+
+    def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}
+
+    def checkServerTrusted(chain: Array[X509Certificate], authType: String) = {}
+  })
 }

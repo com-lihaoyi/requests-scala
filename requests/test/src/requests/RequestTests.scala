@@ -204,5 +204,35 @@ object RequestTests extends TestSuite{
         }
       }
     }
+    'clientCertificate - {
+      val base = "./requests/test/resources"
+      'passwordProtected - {
+        val res = requests.get(
+          "https://client.badssl.com",
+          cert = (s"$base/badssl.com-client.p12", "badssl.com")
+        )
+        assert(res.statusCode == 200)
+      }
+      'noPassword - {
+        val res = requests.get(
+          "https://client.badssl.com",
+          cert = s"$base/badssl.com-client-nopass.p12"
+        )
+        assert(res.statusCode == 200)
+      }
+      'noCert - {
+        val res = requests.get(
+          "https://client.badssl.com"
+        )
+        assert(res.statusCode == 400)
+      }
+    }
+    'selfSignedCertificate - {
+      val res = requests.get(
+        "https://self-signed.badssl.com",
+        verifySslCerts = false
+      )
+      assert(res.statusCode == 200)
+    }
   }
 }
