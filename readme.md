@@ -123,11 +123,11 @@ r.text
 // [{"id":"7990061484","type":"PushEvent","actor":{"id":6242317,"login":...
 ```
 
-If you want the raw bytes of the response, use `r.content`
+If you want the raw bytes of the response, use `r.contents`
 
 
 ```scala
-r.content
+r.contents
 // Array(91, 123, 34, 105, 100, 34, 58, 34, 55, 57,  57, 48, 48, 54, 49, ...
 ```
 
@@ -314,17 +314,17 @@ the `autoCompress` parameter, in case you want the un-compressed data blob for
 whatever reason:
 
 ```scala
-requests.get("https://httpbin.org/gzip").content.length
+requests.get("https://httpbin.org/gzip").contents.length
 // 250
 
-requests.get("https://httpbin.org/gzip", autoDecompress=false).content.length
+requests.get("https://httpbin.org/gzip", autoDecompress=false).contents.length
 // 201
 
 
-requests.get("https://httpbin.org/deflate").content.length
+requests.get("https://httpbin.org/deflate").contents.length
 // 251
 
-requests.get("https://httpbin.org/deflate", autoDecompress=false).content.length
+requests.get("https://httpbin.org/deflate", autoDecompress=false).contents.length
 // 188
 ```
 
