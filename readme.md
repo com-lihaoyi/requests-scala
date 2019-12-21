@@ -633,6 +633,11 @@ codebase or project!
 
 ## Changelog
 
+### 0.3.1
+
+- Client certificate support #40
+- Fix default auth param in Request object causing NullPointerException #41
+
 ### 0.3.0
 
 - Support for uploading
