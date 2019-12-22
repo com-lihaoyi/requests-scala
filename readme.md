@@ -101,6 +101,12 @@ requests.post("https://httpbin.org/post", data = new java.io.File("thing.json"))
 requests.post("https://httpbin.org/post", data = java.nio.file.Paths.get("thing.json"))
 ```
 
+The `data` parameter also supports anything that implements the
+[Writable](https://github.com/lihaoyi/geny#writable) interface, such as
+[ujson.Value](http://www.lihaoyi.com/upickle/#uJson)s,
+[uPickle](http://www.lihaoyi.com/upickle)'s `upickle.default.writable` values,
+or [Scalatags](http://www.lihaoyi.com/scalatags/)'s `Tag`s
+
 ### Response Content
 
 ```scala
