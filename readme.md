@@ -193,20 +193,26 @@ Array[Byte]` to upload it.
 Requests does not provide any built-in JSON support, but you can easily use a 
 third-party JSON library to work with it. This example shows how to use 
 [uJson](http://www.lihaoyi.com/upickle/) talk to a HTTP endpoint that requires a 
-JSON-formatted body, either using `ujson.write`:
+JSON-formatted body, either using `upickle.default.writable`:
 
 ```scala
 requests.get(
   "https://api.github.com/some/endpoint",
-  data = ujson.write(Map("user-agent" -> "my-app/0.0.1"))
+  data = upickle.default.writable(Map("user-agent" -> "my-app/0.0.1"))
 )
 ```
+
+Or by constructing `ujson.Value`s directly
+
 ```scala
 requests.get(
   "https://api.github.com/some/endpoint",
-  data = ujson.write(ujson.Js.Obj("user-agent" -> "my-app/0.0.1"))
+  data = ujson.Obj("user-agent" -> "my-app/0.0.1")
 )
 ```
+
+In both cases, the upload occurs efficiently in a streaming fashion, without
+materializing the entire JSON blob in memory.
 
 It is equally easy ot use uJson to deal with JSON returned in the response from
 the server:
