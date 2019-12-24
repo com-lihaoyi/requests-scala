@@ -31,7 +31,9 @@ case class Session(headers: Map[String, String] = BaseSession.defaultHeaders,
                    connectTimeout: Int = 10 * 1000,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
-                   compress: Compress = Compress.None)
+                   compress: Compress = Compress.None,
+                   inMemory: java.lang.Boolean = null,
+                   check: Boolean = true)
   extends BaseSession{
 
   for((k, v) <- cookieValues) cookies(k) = new HttpCookie(k, v)

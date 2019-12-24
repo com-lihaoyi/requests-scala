@@ -23,6 +23,8 @@ trait BaseSession{
   def verifySslCerts: Boolean
   def autoDecompress: Boolean
   def compress: Compress
+  def inMemory: java.lang.Boolean
+  def check: Boolean
   lazy val get = Requester("GET", this)
   lazy val post = Requester("POST", this)
   lazy val put = Requester("PUT", this)
@@ -92,8 +94,8 @@ case class Requester(verb: String,
             autoDecompress: Boolean = sess.autoDecompress,
             compress: Compress = sess.compress,
             keepAlive: Boolean = true,
-            check: Boolean = true,
-            inMemory: java.lang.Boolean = null): Response = {
+            check: Boolean = sess.check,
+            inMemory: java.lang.Boolean = sess.inMemory): Response = {
     val out = new ByteArrayOutputStream()
 
     var streamHeaders: StreamHeaders = null
