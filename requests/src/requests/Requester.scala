@@ -1,10 +1,9 @@
 package requests
 
-import java.io.{ByteArrayOutputStream, OutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 import java.net.{HttpCookie, HttpURLConnection, InetSocketAddress}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
-import geny.Writable
 import javax.net.ssl._
 
 import collection.JavaConverters._
@@ -156,7 +155,7 @@ case class Requester(verb: String,
              chunkedUpload: Boolean = false,
              redirectedFrom: Option[Response] = None,
              onHeadersReceived: StreamHeaders => Unit = null): geny.Readable = new geny.Readable {
-    def readBytesThrough(f: java.io.InputStream => Unit): Unit = {
+    def readBytesThrough[T](f: java.io.InputStream => T): T = {
 
       val url0 = new java.net.URL(url)
 
@@ -321,13 +320,15 @@ case class Requester(verb: String,
             if (connection.getResponseCode.toString.startsWith("2")) connection.getInputStream
             else connection.getErrorStream
 
-          def processWrappedStream(f: java.io.InputStream => Unit) = {
+          def processWrappedStream[V](f: java.io.InputStream => V): V = {
             if (stream != null) {
               try f(
                 if (deGzip) new GZIPInputStream(stream)
                 else if (deDeflate) new InflaterInputStream(stream)
                 else stream
               ) finally if (!keepAlive) stream.close()
+            }else{
+              f(new ByteArrayInputStream(Array()))
             }
           }
 
