@@ -181,7 +181,7 @@ case class Response(url: String,
                     statusMessage: String,
                     headers: Map[String, Seq[String]],
                     data: geny.Bytes,
-                    history: Option[Response]) extends geny.Readable{
+                    history: Option[Response]) extends geny.ByteData{
 
   def bytes = data.array
 

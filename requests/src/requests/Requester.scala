@@ -155,8 +155,8 @@ case class Requester(verb: String,
              check: Boolean = true,
              chunkedUpload: Boolean = false,
              redirectedFrom: Option[Response] = None,
-             onHeadersReceived: StreamHeaders => Unit = null): geny.Writable = new Writable {
-    def writeBytesTo(out: OutputStream): Unit = {
+             onHeadersReceived: StreamHeaders => Unit = null): geny.Readable = new geny.Readable {
+    def readBytesFrom(f: java.io.InputStream => Unit): Unit = {
 
       val url0 = new java.net.URL(url)
 
@@ -305,7 +305,7 @@ case class Requester(verb: String,
             cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress,
             compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
-          ).writeBytesTo(out)
+          ).readBytesFrom(f)
         }else{
           persistCookies()
           val streamHeaders = StreamHeaders(
@@ -321,20 +321,20 @@ case class Requester(verb: String,
             if (connection.getResponseCode.toString.startsWith("2")) connection.getInputStream
             else connection.getErrorStream
 
-          def streamTo(target: OutputStream) = {
+          def processWrappedStream(f: java.io.InputStream => Unit) = {
             if (stream != null) {
-              try geny.Internal.transfer(
+              try f(
                 if (deGzip) new GZIPInputStream(stream)
                 else if (deDeflate) new InflaterInputStream(stream)
-                else stream,
-                target
+                else stream
               ) finally if (!keepAlive) stream.close()
             }
           }
-          if (streamHeaders.is2xx || !check) streamTo(out)
+
+          if (streamHeaders.is2xx || !check) processWrappedStream(f)
           else {
             val errorOutput = new ByteArrayOutputStream()
-            streamTo(errorOutput)
+            processWrappedStream(geny.Internal.transfer(_, errorOutput))
             throw new RequestFailedException(
               Response(
                 streamHeaders.url,

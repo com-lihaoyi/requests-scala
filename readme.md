@@ -1,4 +1,4 @@
-# Requests-Scala
+# Requests-Scala 0.4.3
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -36,9 +36,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.4.1" // mill
-"com.lihaoyi" %% "requests" % "0.4.1" // sbt
-compile "com.lihaoyi:requests_2.12:0.4.1" //gradle
+ivy"com.lihaoyi::requests:0.4.3" // mill
+"com.lihaoyi" %% "requests" % "0.4.3" // sbt
+compile "com.lihaoyi:requests_2.12:0.4.3" //gradle
 ```
 
 ## Making a Request
@@ -615,7 +615,7 @@ codebase or project!
 
 ## Changelog
 
-### 0.4.2
+### 0.4.3
 
 - `requests.{get,post,put,delete,head,options,patch}` now throw a
   `requests.RequestFailedException(val response: Response)` if a non-2xx status
