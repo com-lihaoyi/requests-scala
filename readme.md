@@ -36,9 +36,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.4.3" // mill
-"com.lihaoyi" %% "requests" % "0.4.3" // sbt
-compile "com.lihaoyi:requests_2.12:0.4.3" //gradle
+ivy"com.lihaoyi::requests:0.4.4" // mill
+"com.lihaoyi" %% "requests" % "0.4.4" // sbt
+compile "com.lihaoyi:requests_2.12:0.4.4" //gradle
 ```
 
 ## Making a Request
@@ -615,7 +615,7 @@ codebase or project!
 
 ## Changelog
 
-### 0.4.3
+### 0.4.4
 
 - `requests.{get,post,put,delete,head,options,patch}` now throw a
   `requests.RequestFailedException(val response: Response)` if a non-2xx status

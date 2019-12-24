@@ -156,7 +156,7 @@ case class Requester(verb: String,
              chunkedUpload: Boolean = false,
              redirectedFrom: Option[Response] = None,
              onHeadersReceived: StreamHeaders => Unit = null): geny.Readable = new geny.Readable {
-    def readBytesFrom(f: java.io.InputStream => Unit): Unit = {
+    def readBytesThrough(f: java.io.InputStream => Unit): Unit = {
 
       val url0 = new java.net.URL(url)
 
@@ -305,7 +305,7 @@ case class Requester(verb: String,
             cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress,
             compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
-          ).readBytesFrom(f)
+          ).readBytesThrough(f)
         }else{
           persistCookies()
           val streamHeaders = StreamHeaders(
