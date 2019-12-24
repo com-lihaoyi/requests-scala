@@ -36,9 +36,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.3.0" // mill
-"com.lihaoyi" %% "requests" % "0.3.0" // sbt
-compile "com.lihaoyi:requests_2.12:0.3.0" //gradle
+ivy"com.lihaoyi::requests:0.4.0" // mill
+"com.lihaoyi" %% "requests" % "0.4.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.4.0" //gradle
 ```
 
 ## Making a Request
