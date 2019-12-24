@@ -55,7 +55,8 @@ case class Request(url: String,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
                    compress: Compress = Compress.None,
-                   keepAlive: Boolean = true)
+                   keepAlive: Boolean = true,
+                   check: Boolean = true)
 
 /**
   * Represents the different things you can upload in the body of a HTTP
@@ -193,21 +194,13 @@ case class Response(url: String,
                     statusCode: Int,
                     statusMessage: String,
                     headers: Map[String, Seq[String]],
-                    data: ResponseBlob,
-                    history: Option[Response]){
+                    data: geny.Bytes,
+                    history: Option[Response]) extends geny.Readable{
 
-  /**
-    * Decodes the byte contents of this response as a String using the default charset
-    */
-  def text() = new String(data.bytes)
-  /**
-    * Decodes the byte contents of this response as a String using the given charset
-    */
-  def text(cs: Charset) = new String(data.bytes, cs)
-  /**
-    * Returns the byte contents of this response
-    */
-  def contents = data.bytes
+  def bytes = data.array
+
+  @deprecated("Use `.bytes`")
+  def contents = data.array
 
   /**
     * Returns the cookies set by this response, and by any redirects that lead up to it
@@ -226,17 +219,22 @@ case class Response(url: String,
 
   def location = headers.get("location").flatMap(_.headOption)
 
-  def is2xx = statusCode.toString.head == '2'
-  def is3xx = statusCode.toString.head == '3'
-  def is4xx = statusCode.toString.head == '4'
-  def is5xx = statusCode.toString.head == '5'
+  def is2xx = statusCode.toString.charAt(0) == '2'
+  def is3xx = statusCode.toString.charAt(0) == '3'
+  def is4xx = statusCode.toString.charAt(0) == '4'
+  def is5xx = statusCode.toString.charAt(0) == '5'
 }
 
 case class StreamHeaders(url: String,
                          statusCode: Int,
                          statusMessage: String,
                          headers: Map[String, Seq[String]],
-                         history: Option[Response])
+                         history: Option[Response]){
+  def is2xx = statusCode.toString.charAt(0) == '2'
+  def is3xx = statusCode.toString.charAt(0) == '3'
+  def is4xx = statusCode.toString.charAt(0) == '4'
+  def is5xx = statusCode.toString.charAt(0) == '5'
+}
 /**
   * Different ways you can authorize a HTTP request; by default, HTTP Basic
   * auth and Proxy auth are supported

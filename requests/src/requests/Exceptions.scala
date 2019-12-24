@@ -8,3 +8,8 @@ extends Exception(s"Unknown host $host in url $url")
 
 class InvalidCertException(val url: String, cause: Throwable)
 extends Exception(s"Unable to validate SSL certificates for $url", cause)
+
+class RequestFailedException(val response: Response)
+extends Exception(
+  s"Request to ${response.url} failed with status code ${response.statusCode}\n${response.text()}"
+)

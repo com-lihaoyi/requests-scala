@@ -16,9 +16,16 @@ object RequestTests extends TestSuite{
       for(protocol <- Seq("http", "https")){
         for(r <- requesters){
           for(r2 <- requesters){
-            val res = r(s"$protocol://httpbin.org/${r2.verb.toLowerCase()}")
+            val res = r(s"$protocol://httpbin.org/${r2.verb.toLowerCase()}", check = false)
             if (r.verb == r2.verb) assert(res.statusCode == 200)
             else assert(res.statusCode == 405)
+
+            if (r.verb == r2.verb){
+              val res = r(s"$protocol://httpbin.org/${r2.verb.toLowerCase()}")
+              assert(res.statusCode == 200)
+            }else intercept[RequestFailedException]{
+              r(s"$protocol://httpbin.org/${r2.verb.toLowerCase()}")
+            }
           }
         }
       }
@@ -101,7 +108,7 @@ object RequestTests extends TestSuite{
         assert(res1.statusCode == 200)
         val res2 = requests.get("https://httpbin.org/absolute-redirect/5")
         assert(res2.statusCode == 200)
-        val res3 = requests.get("https://httpbin.org/absolute-redirect/6")
+        val res3 = requests.get("https://httpbin.org/absolute-redirect/6", check = false)
         assert(res3.statusCode == 302)
         val res4 = requests.get("https://httpbin.org/absolute-redirect/6", maxRedirects = 10)
         assert(res4.statusCode == 200)
@@ -111,7 +118,7 @@ object RequestTests extends TestSuite{
         assert(res1.statusCode == 200)
         val res2 = requests.get("https://httpbin.org/relative-redirect/5")
         assert(res2.statusCode == 200)
-        val res3 = requests.get("https://httpbin.org/relative-redirect/6")
+        val res3 = requests.get("https://httpbin.org/relative-redirect/6", check = false)
         assert(res3.statusCode == 302)
         val res4 = requests.get("https://httpbin.org/relative-redirect/6", maxRedirects = 10)
         assert(res4.statusCode == 200)
@@ -154,16 +161,16 @@ object RequestTests extends TestSuite{
       }
     }
     test("decompress"){
-      val res1 = requests.get("https://httpbin.org/gzip").data
+      val res1 = requests.get("https://httpbin.org/gzip")
       assert(read(res1.text).obj("headers").obj("Host").str == "httpbin.org")
 
-      val res2 = requests.get("https://httpbin.org/deflate").data
+      val res2 = requests.get("https://httpbin.org/deflate")
       assert(read(res2.text).obj("headers").obj("Host").str == "httpbin.org")
 
-      val res3 = requests.get("https://httpbin.org/gzip", autoDecompress = false).data
+      val res3 = requests.get("https://httpbin.org/gzip", autoDecompress = false)
       assert(res3.bytes.length < res1.bytes.length)
 
-      val res4 = requests.get("https://httpbin.org/deflate", autoDecompress = false).data
+      val res4 = requests.get("https://httpbin.org/deflate", autoDecompress = false)
       assert(res4.bytes.length < res2.bytes.length)
 
       (res1.bytes.length, res2.bytes.length, res3.bytes.length, res4.bytes.length)

@@ -615,6 +615,16 @@ codebase or project!
 
 ## Changelog
 
+### 0.4.0
+
+- `requests.{get,post,put,delete,head,options,patch}` now throw a
+  `requests.RequestFailedException(val response: Response)` if a non-2xx status
+  code is received. You can disable throwing the exception by passing in
+  `check = false`
+- `requests.{get,post,put,delete,head,options,patch}.stream` now returns a
+  [Writable](https://github.com/lihaoyi/geny#writable) instead of taking
+  callbacks.
+
 ### 0.3.0
 
 - Support for uploading
