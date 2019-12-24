@@ -615,7 +615,7 @@ codebase or project!
 
 ## Changelog
 
-### 0.4.1
+### 0.4.2
 
 - `requests.{get,post,put,delete,head,options,patch}` now throw a
   `requests.RequestFailedException(val response: Response)` if a non-2xx status

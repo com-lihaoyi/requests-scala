@@ -32,7 +32,7 @@ case class Session(headers: Map[String, String] = BaseSession.defaultHeaders,
                    verifySslCerts: Boolean = true,
                    autoDecompress: Boolean = true,
                    compress: Compress = Compress.None,
-                   inMemory: java.lang.Boolean = null,
+                   chunkedUpload: Boolean = false,
                    check: Boolean = true)
   extends BaseSession{
 

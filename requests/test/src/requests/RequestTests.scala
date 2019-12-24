@@ -58,31 +58,40 @@ object RequestTests extends TestSuite{
         assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
       test("post"){
-        val res1 = requests.post(
-          "https://httpbin.org/post",
-          data = Map("hello" -> "world", "foo" -> "baz")
-        ).text
-        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+        for(chunkedUpload <- Seq(true, false)) {
+          val res1 = requests.post(
+            "https://httpbin.org/post",
+            data = Map("hello" -> "world", "foo" -> "baz"),
+            chunkedUpload = chunkedUpload
+          ).text
+          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+        }
       }
-      test("put"){
-        val res1 = requests.put(
-          "https://httpbin.org/put",
-          data = Map("hello" -> "world", "foo" -> "baz")
-        ).text
-        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+      test("put") {
+        for (chunkedUpload <- Seq(true, false)) {
+          val res1 = requests.put(
+            "https://httpbin.org/put",
+            data = Map("hello" -> "world", "foo" -> "baz"),
+            chunkedUpload = chunkedUpload
+          ).text
+          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+        }
       }
     }
     test("multipart"){
-      val response = requests.post(
-        "http://httpbin.org/post",
-        data = MultiPart(
-          MultiItem("file1", "Hello!".getBytes, "foo.txt"),
-          MultiItem("file2", "Goodbye!")
-        )
-      ).text
+      for(chunkedUpload <- Seq(true, false)) {
+        val response = requests.post(
+          "http://httpbin.org/post",
+          data = MultiPart(
+            MultiItem("file1", "Hello!".getBytes, "foo.txt"),
+            MultiItem("file2", "Goodbye!")
+          ),
+          chunkedUpload = chunkedUpload
+        ).text
 
-      assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
-      assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
+        assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
+        assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
+      }
     }
     test("cookies"){
 

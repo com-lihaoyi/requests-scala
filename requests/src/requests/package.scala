@@ -25,7 +25,7 @@ package object requests extends _root_.requests.BaseSession {
 
   def compress: Compress = Compress.None
 
-  def inMemory: java.lang.Boolean = null
+  def chunkedUpload: Boolean = false
 
   def check: Boolean = true
 }

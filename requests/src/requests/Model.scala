@@ -67,47 +67,35 @@ case class Request(url: String,
   */
 trait RequestBlob{
   def headers: Seq[(String, String)] = Nil
-  def inMemory: Boolean
   def write(out: java.io.OutputStream): Unit
-  def length: Option[Long]
 }
 object RequestBlob{
   object EmptyRequestBlob extends RequestBlob{
-    def inMemory = true
     def write(out: java.io.OutputStream): Unit = ()
-    def length = Some(0)
   }
 
   implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
     private[this] val s = f(x)
-    def inMemory = true
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream"
     )
-    def length = None
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob{
-    def inMemory = false
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream"
     )
-    def length = Some(x.length())
     def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
   implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob{
-    def inMemory = false
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream"
     )
-    def length = Some(java.nio.file.Files.size(x))
     def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
   }
 
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends RequestBlob{
-    def inMemory = true
     val serialized = Util.urlEncode(x).getBytes
-    def length = Some(serialized.length)
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/x-www-form-urlencoded"
     )
@@ -117,7 +105,6 @@ object RequestBlob{
   }
 
   implicit class MultipartFormRequestBlob(val parts: Iterable[MultiItem]) extends RequestBlob{
-    def inMemory = true
     val boundary = UUID.randomUUID().toString
     val crlf = "\r\n"
     val pref = "--"
@@ -132,7 +119,6 @@ object RequestBlob{
     override def headers = Seq(
       "Content-Type" -> s"multipart/form-data; boundary=$boundary"
     )
-    def length = None
     def write(out: java.io.OutputStream) = {
       def writeBytes(s: String): Unit = out.write(s.getBytes())
 

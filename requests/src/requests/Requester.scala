@@ -23,7 +23,7 @@ trait BaseSession{
   def verifySslCerts: Boolean
   def autoDecompress: Boolean
   def compress: Compress
-  def inMemory: java.lang.Boolean
+  def chunkedUpload: Boolean
   def check: Boolean
   lazy val get = Requester("GET", this)
   lazy val post = Requester("POST", this)
@@ -95,14 +95,14 @@ case class Requester(verb: String,
             compress: Compress = sess.compress,
             keepAlive: Boolean = true,
             check: Boolean = sess.check,
-            inMemory: java.lang.Boolean = sess.inMemory): Response = {
+            chunkedUpload: Boolean = sess.chunkedUpload): Response = {
     val out = new ByteArrayOutputStream()
 
     var streamHeaders: StreamHeaders = null
     val w = stream(
       url, auth, params, data.headers, headers, data, readTimeout,
       connectTimeout, proxy, cookies, cookieValues, maxRedirects,
-      verifySslCerts, autoDecompress, compress, keepAlive, check, inMemory,
+      verifySslCerts, autoDecompress, compress, keepAlive, check, chunkedUpload,
       onHeadersReceived = sh => streamHeaders = sh
     )
 
@@ -153,7 +153,7 @@ case class Requester(verb: String,
              compress: Compress = sess.compress,
              keepAlive: Boolean = true,
              check: Boolean = true,
-             inMemory: java.lang.Boolean = null,
+             chunkedUpload: Boolean = false,
              redirectedFrom: Option[Response] = None,
              onHeadersReceived: StreamHeaders => Unit = null): geny.Writable = new Writable {
     def writeBytesTo(out: OutputStream): Unit = {
@@ -242,38 +242,17 @@ case class Requester(verb: String,
               .mkString("; ")
           )
         }
-        val totalSize = data.length.getOrElse(-1L)
-        if (data != RequestBlob.EmptyRequestBlob) {
-          if (Option(inMemory).fold(data.inMemory)(_.booleanValue()) && compress != Compress.None){
-            // For in-memory data inputs we want to compress, we buffer the
-            // compressed output in-memory as well before uploading it. This lets
-            // us avoid using chunked transfer encoding, for data which we already
-            // had in memory and can probably pay the cost of buffering.
-            //
-            // For non-in-memory data inputs, we were already probably going to use
-            // chunked transfer encoding anyway, so we just use that and can skip
-            // the buffering.
-            //
-            // The only exception is known-size on-disk files, which uncompressed
-            // get uploaded via content-length upload but compressed used chunked
-            // transfer encoding. There isn't really any good way around this,
-            // short of pre-compressing the file on disk, if we assume some files
-            // are too big to fit in memory
+        if (verb.toUpperCase == "POST" || verb.toUpperCase == "PUT") {
+          if (!chunkedUpload) {
             val bytes = new ByteArrayOutputStream()
             data.write(compress.wrap(bytes))
             val byteArray = bytes.toByteArray
             connection.setFixedLengthStreamingMode(byteArray.length)
-            connection.getOutputStream.write(byteArray)
-          }else{
-
-            if (totalSize >= 0) connection.setFixedLengthStreamingMode(totalSize)
-            else if (totalSize < 0) connection.setChunkedStreamingMode(0)
-
+            if (byteArray.nonEmpty) connection.getOutputStream.write(byteArray)
+          } else {
+            connection.setChunkedStreamingMode(5)
             data.write(compress.wrap(connection.getOutputStream))
           }
-        }else if(verb.toUpperCase == "POST" || verb.toUpperCase == "PUT"){
-            require(totalSize <= 0, "totalSize should not be greater than zero if onUpload is null")
-            connection.setFixedLengthStreamingMode(0)
         }
 
         val (responseCode, responseMsg, headerFields) = try {(
@@ -324,7 +303,7 @@ case class Requester(verb: String,
             new java.net.URL(url1, newUrl).toString, auth, params, blobHeaders,
             headers, data, readTimeout, connectTimeout, proxy, cookies,
             cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress,
-            compress, keepAlive, check, inMemory, Some(current),
+            compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
           ).writeBytesTo(out)
         }else{
@@ -377,7 +356,7 @@ case class Requester(verb: String,
   /**
     * Overload of [[Requester.apply]] that takes a [[Request]] object as configuration
     */
-  def apply(r: Request, data: RequestBlob, inMemory: java.lang.Boolean): Response = apply(
+  def apply(r: Request, data: RequestBlob, chunkedUpload: Boolean): Response = apply(
     r.url,
     r.auth,
     r.params,
@@ -394,7 +373,7 @@ case class Requester(verb: String,
     r.compress,
     r.keepAlive,
     r.check,
-    inMemory
+    chunkedUpload
   )
 
   /**
@@ -402,7 +381,7 @@ case class Requester(verb: String,
     */
   def stream(r: Request,
              data: RequestBlob,
-             inMemory: java.lang.Boolean,
+             chunkedUpload: Boolean,
              onHeadersReceived: StreamHeaders => Unit): geny.Writable = stream(
     r.url,
     r.auth,
@@ -421,7 +400,7 @@ case class Requester(verb: String,
     r.compress,
     r.keepAlive,
     r.check,
-    inMemory,
+    chunkedUpload,
     None,
     onHeadersReceived
   )
