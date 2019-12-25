@@ -141,11 +141,9 @@ r.contents
 ## Streaming Requests
 
 ```scala
-requests.get.stream("https://api.github.com/events")(
-  onDownload = inputStream => {
-    inputStream.transferTo(new java.io.FileOutputStream("file.json"))
-  }
-)
+requests.get
+  .stream("https://api.github.com/events")
+  .readBytesThrough(_.transferTo(new java.io.FileOutputStream("file.json")))
 ```
 
 Requests exposes the `requests.get.stream` (and equivalent
