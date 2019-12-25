@@ -249,7 +249,7 @@ case class Requester(verb: String,
             connection.setFixedLengthStreamingMode(byteArray.length)
             if (byteArray.nonEmpty) connection.getOutputStream.write(byteArray)
           } else {
-            connection.setChunkedStreamingMode(5)
+            connection.setChunkedStreamingMode(0)
             data.write(compress.wrap(connection.getOutputStream))
           }
         }
