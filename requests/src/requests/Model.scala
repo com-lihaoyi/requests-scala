@@ -179,8 +179,8 @@ class ResponseBlob(val bytes: Array[Byte]){
 case class Response(url: String,
                     statusCode: Int,
                     statusMessage: String,
-                    headers: Map[String, Seq[String]],
                     data: geny.Bytes,
+                    headers: Map[String, Seq[String]],
                     history: Option[Response]) extends geny.ByteData{
 
   def bytes = data.array

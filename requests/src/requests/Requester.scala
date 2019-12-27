@@ -111,8 +111,8 @@ case class Requester(verb: String,
       streamHeaders.url,
       streamHeaders.statusCode,
       streamHeaders.statusMessage,
-      streamHeaders.headers,
       new geny.Bytes(out.toByteArray),
+      streamHeaders.headers,
       streamHeaders.history
     )
   }
@@ -292,8 +292,8 @@ case class Requester(verb: String,
             url,
             responseCode,
             responseMsg,
-            headerFields,
             new geny.Bytes(bytes),
+            headerFields,
             redirectedFrom
           )
           persistCookies()
@@ -341,8 +341,8 @@ case class Requester(verb: String,
                 streamHeaders.url,
                 streamHeaders.statusCode,
                 streamHeaders.statusMessage,
-                streamHeaders.headers,
                 new geny.Bytes(errorOutput.toByteArray),
+                streamHeaders.headers,
                 streamHeaders.history
               )
             )
