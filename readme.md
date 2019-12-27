@@ -141,10 +141,9 @@ r.contents
 ## Streaming Requests
 
 ```scala
-requests.get.stream("https://api.github.com/events")(
-  onDownload = inputStream => {
-    inputStream.transferTo(new java.io.FileOutputStream("file.json"))
-  }
+os.write(
+  os.pwd / "file.json",
+  requests.get.stream("https://api.github.com/events")
 )
 ```
 
@@ -152,41 +151,33 @@ Requests exposes the `requests.get.stream` (and equivalent
 `requests.post.stream`, `requests.put.stream`, etc.) functions for you to
 perform streaming uploads/downloads without needing to load the entire
 request/response into memory. This is useful if you are upload/downloading large
-files or data blobs. `.stream` gives you three callbacks that get called in
-order:
+files or data blobs. `.stream` returns a
+[Readable](https://github.com/lihaoyi/geny#readable) value, that can be then
+passed to methods like [os.write](https://github.com/lihaoyi/os-lib#oswrite),
+`fastparse.parse` or `upickle.default.read` to handle the received data in a
+streaming fashion:
 
 ```scala
-requests.get.stream("https://api.github.com/events")(
-  onUpload = outputStream => {...},
-  onHeadersReceived = streamHeaders => {...}
-  onDownload = inputStream => {...}
+ujson.read(requests.get.stream("https://api.github.com/events"))
+```
+
+Since `requests.post` and `requests.put` both take a `data: geny.Writable`
+parameter, you can even chain requests together, taking the data returned from
+one HTTP request and feeding it into another:
+
+```scala
+os.write(
+  os.pwd / "chained.json",
+  requests.post.stream(
+    "https://httpbin.org/post",
+    data = requests.get.stream("https://api.github.com/events")
+  )
 )
 ```
 
-- `onUpload` gives you a chance to write data to the server. You have access to
-  a raw `java.io.OutputStream` to write to, and can easily upload data from
-  memory, files, network, or any other data source.
-
-- `onHeadersReceived` is called after any upload is complete but before download
-  starts: this gives you the metadata present in the header of the HTTP
-  response, but without the `data` field (which you will have access to download
-  later)
-
-- `onDownload` gives you a chance to read data from the server. Again, you have
-  access to the raw stream, this time a `java.io.InputStream`. You can download
-  data however you like, saving it in memory, to files, sending it over the
-  network, or to any other destination
-
-Together, these three callbacks should make it easy for you to work with data
+`requests.*.stream` should make it easy for you to work with data
 too big to fit in memory, while still benefiting from most of Requests' friendly
 & intuitive API.
-
-Note that streaming upload using `.stream`, and streaming upload using `data =
-is: java.io.InputStream`, relies on
-[chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding),
-a feature not fully supported by all HTTP servers. If your server doesn't
-support it, fall back to buffering your data in memory and using `data = is:
-Array[Byte]` to upload it.
 
 ## Handling JSON
 
