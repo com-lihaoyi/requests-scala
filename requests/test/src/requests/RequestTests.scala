@@ -220,5 +220,45 @@ object RequestTests extends TestSuite{
         }
       }
     }
+    test("clientCertificate"){
+      val base = "./requests/test/resources"
+      val instruction = "https://github.com/lihaoyi/requests-scala/blob/master/requests/test/resources/badssl.com-client.md"
+      test("passwordProtected"){
+        val res = requests.get(
+          "https://client.badssl.com",
+          cert = (s"$base/badssl.com-client.p12", "badssl.com"),
+          check = false
+        )
+        if (res.statusCode == 400)
+          println(s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue")
+        else
+          assert(res.statusCode == 200)
+      }
+      test("noPassword"){
+        val res = requests.get(
+          "https://client.badssl.com",
+          cert = s"$base/badssl.com-client-nopass.p12",
+          check = false
+        )
+        if (res.statusCode == 400)
+          println(s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue")
+        else
+          assert(res.statusCode == 200)
+      }
+      test("noCert"){
+        val res = requests.get(
+          "https://client.badssl.com",
+          check = false
+        )
+        assert(res.statusCode == 400)
+      }
+    }
+    test("selfSignedCertificate"){
+      val res = requests.get(
+        "https://self-signed.badssl.com",
+        verifySslCerts = false
+      )
+      assert(res.statusCode == 200)
+    }
   }
 }

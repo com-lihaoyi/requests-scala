@@ -17,6 +17,7 @@ trait BaseSession{
   def connectTimeout: Int
   def auth: RequestAuth
   def proxy: (String, Int)
+  def cert: Cert
   def maxRedirects: Int
   def persistCookies: Boolean
   def verifySslCerts: Boolean
@@ -71,6 +72,7 @@ case class Requester(verb: String,
     * @param readTimeout How long to wait for data to be read before timing out
     * @param connectTimeout How long to wait for a connection before timing out
     * @param proxy Host and port of a proxy you want to use
+    * @param cert Client certificate configuration
     * @param cookies Custom cookies to send up with this request
     * @param maxRedirects How many redirects to automatically resolve; defaults to 5.
     *                     You can also set it to 0 to prevent Requests from resolving
@@ -86,6 +88,7 @@ case class Requester(verb: String,
             readTimeout: Int = sess.readTimeout,
             connectTimeout: Int = sess.connectTimeout,
             proxy: (String, Int) = sess.proxy,
+            cert: Cert = sess.cert,
             cookies: Map[String, HttpCookie] = Map(),
             cookieValues: Map[String, String] = Map(),
             maxRedirects: Int = sess.maxRedirects,
@@ -100,7 +103,7 @@ case class Requester(verb: String,
     var streamHeaders: StreamHeaders = null
     val w = stream(
       url, auth, params, data.headers, headers, data, readTimeout,
-      connectTimeout, proxy, cookies, cookieValues, maxRedirects,
+      connectTimeout, proxy, cert, cookies, cookieValues, maxRedirects,
       verifySslCerts, autoDecompress, compress, keepAlive, check, chunkedUpload,
       onHeadersReceived = sh => streamHeaders = sh
     )
@@ -144,6 +147,7 @@ case class Requester(verb: String,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
              proxy: (String, Int) = sess.proxy,
+             cert: Cert = sess.cert,
              cookies: Map[String, HttpCookie] = Map(),
              cookieValues: Map[String, String] = Map(),
              maxRedirects: Int = sess.maxRedirects,
@@ -179,19 +183,18 @@ case class Requester(verb: String,
             url1.openConnection(p)
           }
 
-        connection = conn match{
-          case c: HttpsURLConnection =>
-            if (!verifySslCerts) {
-              c.setSSLSocketFactory(Util.noVerifySocketFactory)
-              c.setHostnameVerifier(
-                new javax.net.ssl.HostnameVerifier {
-                  override def verify(s: String, sslSession: SSLSession) = true
-                }
-              )
-            }
-            c
-          case c: HttpURLConnection => c
-        }
+      connection = conn match{
+        case c: HttpsURLConnection =>
+          if (cert != null) {
+            c.setSSLSocketFactory(Util.clientCertSocketFactory(cert, verifySslCerts))
+            if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+          } else if (!verifySslCerts) {
+            c.setSSLSocketFactory(Util.noVerifySocketFactory)
+            c.setHostnameVerifier((_: String, _: SSLSession) => true)
+          }
+          c
+        case c: HttpURLConnection => c
+      }
 
         connection.setInstanceFollowRedirects(false)
         val upperCaseVerb = verb.toUpperCase
@@ -300,7 +303,7 @@ case class Requester(verb: String,
           val newUrl = current.headers("location").head
           stream(
             new java.net.URL(url1, newUrl).toString, auth, params, blobHeaders,
-            headers, data, readTimeout, connectTimeout, proxy, cookies,
+            headers, data, readTimeout, connectTimeout, proxy, cert, cookies,
             cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress,
             compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
@@ -366,6 +369,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.cert,
     r.cookies,
     r.cookieValues,
     r.maxRedirects,
@@ -393,6 +397,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.cert,
     r.cookies,
     r.cookieValues,
     r.maxRedirects,
