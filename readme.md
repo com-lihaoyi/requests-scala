@@ -184,19 +184,19 @@ too big to fit in memory, while still benefiting from most of Requests' friendly
 Requests does not provide any built-in JSON support, but you can easily use a 
 third-party JSON library to work with it. This example shows how to use 
 [uJson](http://www.lihaoyi.com/upickle/) talk to a HTTP endpoint that requires a 
-JSON-formatted body, either using `upickle.default.writable`:
+JSON-formatted body, either using `upickle.default.stream`:
 
 ```scala
-requests.get(
+requests.post(
   "https://api.github.com/some/endpoint",
-  data = upickle.default.writable(Map("user-agent" -> "my-app/0.0.1"))
+  data = upickle.default.stream(Map("user-agent" -> "my-app/0.0.1"))
 )
 ```
 
 Or by constructing `ujson.Value`s directly
 
 ```scala
-requests.get(
+requests.post(
   "https://api.github.com/some/endpoint",
   data = ujson.Obj("user-agent" -> "my-app/0.0.1")
 )
