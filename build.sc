@@ -17,7 +17,7 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
     )
   )
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::geny::0.4.2"
+    ivy"com.lihaoyi::geny::0.5.0"
   )
   object test extends Tests{
     def ivyDeps = Agg(
