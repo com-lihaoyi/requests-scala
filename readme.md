@@ -1,4 +1,4 @@
-# Requests-Scala 0.4.7
+# Requests-Scala 0.5.1
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -36,9 +36,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.4.7" // mill
-"com.lihaoyi" %% "requests" % "0.4.7" // sbt
-compile "com.lihaoyi:requests_2.12:0.4.7" //gradle
+ivy"com.lihaoyi::requests:0.5.1" // mill
+"com.lihaoyi" %% "requests" % "0.5.1" // sbt
+compile "com.lihaoyi:requests_2.12:0.5.1" //gradle
 ```
 
 ## Making a Request
@@ -605,6 +605,12 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.5.1
+
+- Made `requests.{get,post,put,delete,head,options,patch}.stream` return a
+  [Readable](https://github.com/lihaoyi/geny#readable), allowing upickle and
+  fastparse to operate directly on the streaming input
 
 ### 0.4.7
 
