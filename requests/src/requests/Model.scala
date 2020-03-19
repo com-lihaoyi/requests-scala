@@ -76,9 +76,13 @@ object RequestBlob{
 
   implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
     private[this] val s = f(x)
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream"
-    )
+    override def headers = {
+      val contentType = s match {
+        case _: ujson.Value => "application/json"
+        case _ => "application/octet-stream"
+      }
+      super.headers ++ Seq("Content-Type" -> contentType)
+    }
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob{

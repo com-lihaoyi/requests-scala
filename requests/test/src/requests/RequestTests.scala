@@ -220,5 +220,11 @@ object RequestTests extends TestSuite{
         }
       }
     }
+    test("blob content type") {
+      test("json") {
+        val blob: RequestBlob = Obj("k" -> "v")
+        assert(blob.headers.contains("Content-Type" -> "application/json"))
+      }
+    }
   }
 }
