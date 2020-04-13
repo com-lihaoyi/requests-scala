@@ -28,6 +28,7 @@ For a hands-on introduction to this library, take a look at the following blog p
     - [Compression](#compression)
     - [Cookies](#cookies)
     - [Redirects](#redirects)
+    - [Client Side Certificates](#client-side-certificates)
 - [Sessions](#sessions)
 - [Why Requests-Scala?](#why-requests-scala)
 
@@ -414,6 +415,36 @@ a linked list of `Response` objects until the earliest response has a value of
 `None`. You can crawl up this linked list if you want to inspect the headers or
 other metadata of the intermediate redirects that brought you to your final value.
 
+### Client Side Certificates
+
+To use client certificate you need a PKCS 12 archive with private key and certificate.
+
+```scala
+requests.get(
+  "https://client.badssl.com",
+  cert = "./badssl.com-client.p12"
+)
+```
+
+If the p12 archive is password protected you can provide a second parameter:
+
+```scala
+requests.get(
+  "https://client.badssl.com",
+  cert = ("./badssl.com-client.p12", "password")
+)
+```
+
+For test environments you may want to combine `cert` with the `verifySslCerts = false` option (if you have self signed SSL certificates on test servers).
+
+```scala
+requests.get(
+  "https://client.badssl.com",
+  cert = ("./badssl.com-client.p12", "password"),
+  verifySslCerts = false
+)
+```
+
 ## Sessions
 
 A `requests.Session` automatically handles sending/receiving/persisting cookies
@@ -452,7 +483,6 @@ val r2 = s.get("https://httpbin.org/headers")
 
 r2.text
 // {"headers":{"X-Special-Header":"omg", ...}}
-"""
 ```
 
 ## Why Requests-Scala?
