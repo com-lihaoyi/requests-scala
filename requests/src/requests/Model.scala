@@ -9,6 +9,8 @@ import java.io.OutputStream
 import java.nio.charset.Charset
 import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
 
+import javax.net.ssl.SSLContext
+
 /**
   * Mechanisms for compressing the upload stream; supports Gzip and Deflate
   * by default
@@ -50,6 +52,7 @@ case class Request(url: String,
                    connectTimeout: Int = 0,
                    proxy: (String, Int) = null,
                    cert: Cert = null,
+                   sslContext: SSLContext = null,
                    cookies: Map[String, HttpCookie] = Map(),
                    cookieValues: Map[String, String] = Map(),
                    maxRedirects: Int = 5,

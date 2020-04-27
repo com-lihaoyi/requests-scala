@@ -445,6 +445,17 @@ requests.get(
 )
 ```
 
+You can also use a sslContext to provide a more customized ssl configuration
+
+```scala
+val sslContext: SSLContext = //initialized sslContext
+
+requests.get(
+  "https://client.badssl.com",
+  sslcontext = sslContext
+)
+```
+
 ## Sessions
 
 A `requests.Session` automatically handles sending/receiving/persisting cookies
