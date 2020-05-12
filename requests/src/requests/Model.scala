@@ -38,6 +38,26 @@ object Compress{
   }
 }
 
+trait RequestAuth{
+  def header: Option[String]
+}
+
+object RequestAuth{
+  object Empty extends RequestAuth{
+    def header = None
+  }
+  implicit def implicitBasic(x: (String, String)) = new Basic(x._1, x._2)
+  class Basic(username: String, password: String) extends RequestAuth{
+    def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
+  }
+  case class Proxy(username: String, password: String) extends RequestAuth{
+    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
+  }
+  case class Bearer(token: String) extends RequestAuth {
+    def header = Some(s"Bearer $token")
+  }
+}
+
 /**
   * The equivalent of configuring a [[Requester.apply]] or [[Requester.stream]]
   * call, but without invoking it. Useful if you want to further customize it
@@ -229,25 +249,6 @@ case class StreamHeaders(url: String,
   * Different ways you can authorize a HTTP request; by default, HTTP Basic
   * auth and Proxy auth are supported
   */
-trait RequestAuth{
-  def header: Option[String]
-}
-
-object RequestAuth{
-  object Empty extends RequestAuth{
-    def header = None
-  }
-  implicit def implicitBasic(x: (String, String)) = new Basic(x._1, x._2)
-  class Basic(username: String, password: String) extends RequestAuth{
-    def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
-  }
-  case class Proxy(username: String, password: String) extends RequestAuth{
-    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
-  }
-  case class Bearer(token: String) extends RequestAuth {
-    def header = Some(s"Bearer $token")
-  }
-}
 
 sealed trait Cert
 object Cert{
