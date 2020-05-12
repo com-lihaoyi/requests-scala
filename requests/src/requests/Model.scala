@@ -38,6 +38,10 @@ object Compress{
   }
 }
 
+/**
+  * Different ways you can authorize a HTTP request; by default, HTTP Basic
+  * auth and Proxy auth are supported
+  */
 trait RequestAuth{
   def header: Option[String]
 }
@@ -59,6 +63,13 @@ object RequestAuth{
   case class Bearer(token: String) extends RequestAuth {
     def header = Some(s"Bearer $token")
   }
+}
+
+sealed trait Cert
+object Cert{
+  implicit def implicitP12(path: String) = P12(path, None)
+  implicit def implicitP12(x: (String, String)) = P12(x._1, Some(x._2))
+  case class P12(p12: String, pwd: Option[String] = None) extends Cert
 }
 
 /**
@@ -247,15 +258,4 @@ case class StreamHeaders(url: String,
   def is3xx = statusCode.toString.charAt(0) == '3'
   def is4xx = statusCode.toString.charAt(0) == '4'
   def is5xx = statusCode.toString.charAt(0) == '5'
-}
-/**
-  * Different ways you can authorize a HTTP request; by default, HTTP Basic
-  * auth and Proxy auth are supported
-  */
-
-sealed trait Cert
-object Cert{
-  implicit def implicitP12(path: String) = P12(path, None)
-  implicit def implicitP12(x: (String, String)) = P12(x._1, Some(x._2))
-  case class P12(p12: String, pwd: Option[String] = None) extends Cert
 }
