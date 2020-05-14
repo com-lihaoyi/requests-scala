@@ -4,7 +4,7 @@ import scalalib._
 
 object requests extends Cross[RequestsModule]("2.12.6", "2.13.0")
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
-  def publishVersion = "0.5.2"
+  def publishVersion = "0.6.0"
   def artifactName = "requests"
   def pomSettings = PomSettings(
     description = "Scala port of the popular Python Requests HTTP client",
@@ -17,12 +17,12 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
     )
   )
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::geny::0.5.0"
+    ivy"com.lihaoyi::geny::0.6.0"
   )
   object test extends Tests{
     def ivyDeps = Agg(
       ivy"com.lihaoyi::utest::0.7.3",
-      ivy"com.lihaoyi::ujson::0.9.7"
+      ivy"com.lihaoyi::ujson::1.1.0"
     )
     def testFrameworks = Seq("utest.runner.Framework")
   }

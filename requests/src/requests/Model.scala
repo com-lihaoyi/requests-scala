@@ -77,20 +77,23 @@ object RequestBlob{
 
   implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
     private[this] val s = f(x)
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream"
-    )
+    override def headers =
+      super.headers ++
+      s.httpContentType.map("Content-Type" -> _)
+      s.contentLength.map("Content-Length" -> _.toString)
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob{
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream"
+      "Content-Type" -> "application/octet-stream",
+      "Content-Length" -> x.length().toString
     )
     def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
   implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob{
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream"
+      "Content-Type" -> "application/octet-stream",
+      "Content-Length" -> java.nio.file.Files.size(x).toString
     )
     def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
   }
