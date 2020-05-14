@@ -1,6 +1,8 @@
 package requests
 import java.net.HttpCookie
 
+import javax.net.ssl.SSLContext
+
 import scala.collection.mutable
 
 /**
@@ -26,6 +28,7 @@ case class Session(headers: Map[String, String] = BaseSession.defaultHeaders,
                    auth: RequestAuth = RequestAuth.Empty,
                    proxy: (String, Int) = null,
                    cert: Cert = null,
+                   sslContext: SSLContext = null,
                    persistCookies: Boolean = true,
                    maxRedirects: Int = 5,
                    readTimeout: Int = 10 * 1000,

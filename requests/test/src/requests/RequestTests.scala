@@ -222,15 +222,17 @@ object RequestTests extends TestSuite{
     }
     test("clientCertificate"){
       val base = "./requests/test/resources"
+      val url = "https://client.badssl.com"
       val instruction = "https://github.com/lihaoyi/requests-scala/blob/master/requests/test/resources/badssl.com-client.md"
+      val certificateExpiredMessage = s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue"
       test("passwordProtected"){
         val res = requests.get(
-          "https://client.badssl.com",
+          url,
           cert = (s"$base/badssl.com-client.p12", "badssl.com"),
           check = false
         )
         if (res.statusCode == 400)
-          println(s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue")
+          println(certificateExpiredMessage)
         else
           assert(res.statusCode == 200)
       }
@@ -241,7 +243,18 @@ object RequestTests extends TestSuite{
           check = false
         )
         if (res.statusCode == 400)
-          println(s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue")
+          println(certificateExpiredMessage)
+        else
+          assert(res.statusCode == 200)
+      }
+      test("sslContext"){
+        val res = requests.get(
+          "https://client.badssl.com",
+          sslContext = FileUtils.createSslContext(s"$base/badssl.com-client.p12", "badssl.com"),
+          check = false
+        )
+        if (res.statusCode == 400)
+          println(certificateExpiredMessage)
         else
           assert(res.statusCode == 200)
       }

@@ -1,5 +1,7 @@
 import java.net.HttpCookie
 
+import javax.net.ssl.SSLContext
+
 import scala.collection.mutable
 
 package object requests extends _root_.requests.BaseSession {
@@ -12,6 +14,8 @@ package object requests extends _root_.requests.BaseSession {
   def proxy = null
 
   def cert: Cert = null
+
+  def sslContext: SSLContext = null
 
   def maxRedirects: Int = 5
 
