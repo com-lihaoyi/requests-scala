@@ -82,7 +82,7 @@ object RequestBlob{
     private[this] val s = f(x)
     override def headers =
       super.headers ++
-      s.httpContentType.map("Content-Type" -> _) ++ 
+      s.httpContentType.map("Content-Type" -> _) ++
       s.contentLength.map("Content-Length" -> _.toString)
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
