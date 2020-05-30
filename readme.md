@@ -7,7 +7,16 @@ Requests-Scala is a Scala port of the popular Python
 provide the same API and user-experience as the original Requests: flexible,
 intuitive, and straightforward to use.
 
-If you use Requests-Scala and like it, please support it by donating to our Patreon:
+If you use Requests-Scala and like it, you will probably enjoy the following book by the Author:
+
+- [*Hands-on Scala Programming*](https://www.handsonscala.com/)
+
+*Hands-on Scala* has uses Requests-Scala extensively throughout the book, and has
+the entirety of *Chapter 12: Working with HTTP APIs* dedicated to 
+the library. *Hands-on Scala* is a great way to level up your skills in Scala
+in general and Requests-Scala in particular.
+
+You can also support it by donating to our Patreon:
 
 - [https://www.patreon.com/lihaoyi](https://www.patreon.com/lihaoyi)
 
