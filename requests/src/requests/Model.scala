@@ -188,7 +188,7 @@ case class Response(url: String,
                     statusMessage: String,
                     data: geny.Bytes,
                     headers: Map[String, Seq[String]],
-                    history: Option[Response]) extends geny.ByteData{
+                    history: Option[Response]) extends geny.ByteData with geny.Readable{
 
   def bytes = data.array
 
@@ -208,14 +208,18 @@ case class Response(url: String,
 
   def contentType = headers.get("content-type").flatMap(_.headOption)
 
-  def contentLength = headers.get("content-length").flatMap(_.headOption)
-
   def location = headers.get("location").flatMap(_.headOption)
 
   def is2xx = statusCode.toString.charAt(0) == '2'
   def is3xx = statusCode.toString.charAt(0) == '3'
   def is4xx = statusCode.toString.charAt(0) == '4'
   def is5xx = statusCode.toString.charAt(0) == '5'
+
+  def readBytesThrough[T](f: java.io.InputStream => T): T = {
+    f(new java.io.ByteArrayInputStream(data.array))
+  }
+  override def httpContentType: Option[String] = contentType
+  override def contentLength: Option[Long] = Some(data.array.size)
 }
 
 case class StreamHeaders(url: String,

@@ -40,7 +40,7 @@ object RequestTests extends TestSuite{
         val res2 = requests.get(
           "https://httpbin.org/get",
           params = Map("hello" -> "world", "foo" -> "baz")
-        ).text
+        )
         assert(read(res2).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // Mixed URL and params
@@ -54,7 +54,7 @@ object RequestTests extends TestSuite{
         val res4 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("++-- lol" -> " !@#$%")
-        ).text
+        )
         assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
       test("post"){
@@ -174,7 +174,7 @@ object RequestTests extends TestSuite{
       assert(read(res1.text).obj("headers").obj("Host").str == "httpbin.org")
 
       val res2 = requests.get("https://httpbin.org/deflate")
-      assert(read(res2.text).obj("headers").obj("Host").str == "httpbin.org")
+      assert(read(res2).obj("headers").obj("Host").str == "httpbin.org")
 
       val res3 = requests.get("https://httpbin.org/gzip", autoDecompress = false)
       assert(res3.bytes.length < res1.bytes.length)
