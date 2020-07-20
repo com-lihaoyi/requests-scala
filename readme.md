@@ -1,4 +1,4 @@
-# Requests-Scala 0.6.4
+# Requests-Scala 0.6.5
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -46,9 +46,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.6.4" // mill
-"com.lihaoyi" %% "requests" % "0.6.4" // sbt
-compile "com.lihaoyi:requests_2.12:0.6.4" //gradle
+ivy"com.lihaoyi::requests:0.6.5" // mill
+"com.lihaoyi" %% "requests" % "0.6.5" // sbt
+compile "com.lihaoyi:requests_2.12:0.6.5" //gradle
 ```
 
 ## Making a Request
@@ -656,7 +656,7 @@ codebase or project!
 
 ## Changelog
 
-### 0.6.4
+### 0.6.5
 
 - `requests.Response` now implements the `geny.Readable` interface, and can be
   directly passed to compatible APIs like `ujson.read` or `os.write`
