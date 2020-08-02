@@ -187,21 +187,21 @@ case class Requester(verb: String,
             url1.openConnection(p)
           }
 
-      connection = conn match{
-        case c: HttpsURLConnection =>
-          if (cert != null) {
-            c.setSSLSocketFactory(Util.clientCertSocketFactory(cert, verifySslCerts))
-            if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
-          } else if (sslContext != null) {
-            c.setSSLSocketFactory(sslContext.getSocketFactory)
-            if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
-          } else if (!verifySslCerts) {
-            c.setSSLSocketFactory(Util.noVerifySocketFactory)
-            c.setHostnameVerifier((_: String, _: SSLSession) => true)
-          }
-          c
-        case c: HttpURLConnection => c
-      }
+        connection = conn match{
+          case c: HttpsURLConnection =>
+            if (cert != null) {
+              c.setSSLSocketFactory(Util.clientCertSocketFactory(cert, verifySslCerts))
+              if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+            } else if (sslContext != null) {
+              c.setSSLSocketFactory(sslContext.getSocketFactory)
+              if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+            } else if (!verifySslCerts) {
+              c.setSSLSocketFactory(Util.noVerifySocketFactory)
+              c.setHostnameVerifier((_: String, _: SSLSession) => true)
+            }
+            c
+          case c: HttpURLConnection => c
+        }
 
         connection.setInstanceFollowRedirects(false)
         val upperCaseVerb = verb.toUpperCase

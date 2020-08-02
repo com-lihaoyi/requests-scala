@@ -244,7 +244,7 @@ object RequestAuth{
   object Empty extends RequestAuth{
     def header = None
   }
-  implicit def implicitBasic(x: (String, String)) = new Basic(x._1, x._2)
+  implicit def implicitBasic(x: (String, String)): Basic = new Basic(x._1, x._2)
   class Basic(username: String, password: String) extends RequestAuth{
     def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
@@ -258,7 +258,7 @@ object RequestAuth{
 
 sealed trait Cert
 object Cert{
-  implicit def implicitP12(path: String) = P12(path, None)
-  implicit def implicitP12(x: (String, String)) = P12(x._1, Some(x._2))
+  implicit def implicitP12(path: String): P12 = P12(path, None)
+  implicit def implicitP12(x: (String, String)): P12 = P12(x._1, Some(x._2))
   case class P12(p12: String, pwd: Option[String] = None) extends Cert
 }

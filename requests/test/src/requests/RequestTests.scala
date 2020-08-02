@@ -33,7 +33,7 @@ object RequestTests extends TestSuite{
     test("params"){
       test("get"){
         // All in URL
-        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").text
+        val res1 = requests.get("https://httpbin.org/get?hello=world&foo=baz").text()
         assert(read(res1).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // All in params
@@ -47,7 +47,7 @@ object RequestTests extends TestSuite{
         val res3 = requests.get(
           "https://httpbin.org/get?hello=world",
           params = Map("foo" -> "baz")
-        ).text
+        ).text()
         assert(read(res3).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
         // Needs escaping
@@ -63,7 +63,7 @@ object RequestTests extends TestSuite{
             "https://httpbin.org/post",
             data = Map("hello" -> "world", "foo" -> "baz"),
             chunkedUpload = chunkedUpload
-          ).text
+          ).text()
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
@@ -73,7 +73,7 @@ object RequestTests extends TestSuite{
             "https://httpbin.org/put",
             data = Map("hello" -> "world", "foo" -> "baz"),
             chunkedUpload = chunkedUpload
-          ).text
+          ).text()
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
@@ -87,7 +87,7 @@ object RequestTests extends TestSuite{
             MultiItem("file2", "Goodbye!")
           ),
           chunkedUpload = chunkedUpload
-        ).text
+        ).text()
 
         assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
         assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
@@ -97,17 +97,17 @@ object RequestTests extends TestSuite{
 
       test("session"){
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
-        val res1 = s.get("https://httpbin.org/cookies").text.trim
+        val res1 = s.get("https://httpbin.org/cookies").text().trim
         assert(read(res1) == Obj("cookies" -> Obj("hello" -> "world")))
         s.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = s.get("https://httpbin.org/cookies").text.trim
+        val res2 = s.get("https://httpbin.org/cookies").text().trim
         assert(read(res2) == Obj("cookies" -> Obj("freeform" -> "test", "hello" -> "world")))
       }
       test("raw"){
-        val res1 = requests.get("https://httpbin.org/cookies").text.trim
+        val res1 = requests.get("https://httpbin.org/cookies").text().trim
         assert(read(res1) == Obj("cookies" -> Obj()))
         requests.get("https://httpbin.org/cookies/set?freeform=test")
-        val res2 = requests.get("https://httpbin.org/cookies").text.trim
+        val res2 = requests.get("https://httpbin.org/cookies").text().trim
         assert(read(res2) == Obj("cookies" -> Obj()))
       }
     }
@@ -134,9 +134,9 @@ object RequestTests extends TestSuite{
       }
     }
     test("streaming"){
-      val res1 = requests.get("http://httpbin.org/stream/5").text
+      val res1 = requests.get("http://httpbin.org/stream/5").text()
       assert(res1.linesIterator.length == 5)
-      val res2 = requests.get("http://httpbin.org/stream/52").text
+      val res2 = requests.get("http://httpbin.org/stream/52").text()
       assert(res2.linesIterator.length == 52)
     }
     test("timeouts"){
@@ -171,7 +171,7 @@ object RequestTests extends TestSuite{
     }
     test("decompress"){
       val res1 = requests.get("https://httpbin.org/gzip")
-      assert(read(res1.text).obj("headers").obj("Host").str == "httpbin.org")
+      assert(read(res1.text()).obj("headers").obj("Host").str == "httpbin.org")
 
       val res2 = requests.get("https://httpbin.org/deflate")
       assert(read(res2).obj("headers").obj("Host").str == "httpbin.org")
@@ -190,26 +190,26 @@ object RequestTests extends TestSuite{
         compress = requests.Compress.None,
         data = "Hello World"
       )
-      assert(res1.text.contains(""""Hello World""""))
+      assert(res1.text().contains(""""Hello World""""))
 
       val res2 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Gzip,
         data = "I am cow"
       )
-      assert(res2.text.contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
+      assert(res2.text().contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
 
       val res3 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Deflate,
         data = "Hear me moo"
       )
-      assert(res3.text.contains("data:application/octet-stream;base64,eJw="))
-      res3.text
+      assert(res3.text().contains("data:application/octet-stream;base64,eJw="))
+      res3.text()
     }
     test("headers"){
       test("default"){
-        val res = requests.get("https://httpbin.org/headers").text
+        val res = requests.get("https://httpbin.org/headers").text()
         val hs = read(res)("headers").obj
         assert(hs("User-Agent").str == "requests-scala")
         assert(hs("Accept-Encoding").str == "gzip, deflate")
