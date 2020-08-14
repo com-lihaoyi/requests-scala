@@ -2,7 +2,9 @@ import mill._
 import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
 import scalalib._
 
-object requests extends Cross[RequestsModule]("2.12.6", "2.13.0")
+val dottyVersion = Option(sys.props("dottyVersion"))
+
+object requests extends Cross[RequestsModule]((List("2.12.6", "2.13.0", "0.26.0-RC1") ++ dottyVersion): _*)
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
   def publishVersion = "0.6.5"
   def artifactName = "requests"
@@ -21,7 +23,7 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
   )
   object test extends Tests{
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::utest::0.7.3",
+      ivy"com.lihaoyi::utest::0.7.4",
       ivy"com.lihaoyi::ujson::1.1.0"
     )
     def testFrameworks = Seq("utest.runner.Framework")
