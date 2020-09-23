@@ -61,7 +61,7 @@ object RequestTests extends TestSuite{
         for(chunkedUpload <- Seq(true, false)) {
           val res1 = requests.post(
             "https://httpbin.org/post",
-            data = Map("hello" -> "world", "foo" -> "baz"),
+            data = new RequestBlob.FormEncodedRequestBlob(Map("hello" -> "world", "foo" -> "baz")),
             chunkedUpload = chunkedUpload
           ).text()
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
@@ -71,7 +71,7 @@ object RequestTests extends TestSuite{
         for (chunkedUpload <- Seq(true, false)) {
           val res1 = requests.put(
             "https://httpbin.org/put",
-            data = Map("hello" -> "world", "foo" -> "baz"),
+            data = new RequestBlob.FormEncodedRequestBlob(Map("hello" -> "world", "foo" -> "baz")),
             chunkedUpload = chunkedUpload
           ).text()
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
@@ -189,21 +189,21 @@ object RequestTests extends TestSuite{
       val res1 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.None,
-        data = "Hello World"
+        data = new RequestBlob.ByteSourceRequestBlob("Hello World")
       )
       assert(res1.text().contains(""""Hello World""""))
 
       val res2 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Gzip,
-        data = "I am cow"
+        data = new RequestBlob.ByteSourceRequestBlob("I am cow")
       )
       assert(res2.text().contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
 
       val res3 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Deflate,
-        data = "Hear me moo"
+        data = new RequestBlob.ByteSourceRequestBlob("Hear me moo")
       )
       assert(res3.text().contains("data:application/octet-stream;base64,eJw="))
       res3.text()
@@ -229,7 +229,7 @@ object RequestTests extends TestSuite{
       test("passwordProtected"){
         val res = requests.get(
           url,
-          cert = (s"$base/badssl.com-client.p12", "badssl.com"),
+          cert = Cert.implicitP12(s"$base/badssl.com-client.p12", "badssl.com"),
           check = false
         )
         if (res.statusCode == 400)
@@ -240,7 +240,7 @@ object RequestTests extends TestSuite{
       test("noPassword"){
         val res = requests.get(
           "https://client.badssl.com",
-          cert = s"$base/badssl.com-client-nopass.p12",
+          cert = Cert.implicitP12(s"$base/badssl.com-client-nopass.p12"),
           check = false
         )
         if (res.statusCode == 400)
