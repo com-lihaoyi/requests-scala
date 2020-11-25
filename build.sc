@@ -4,7 +4,7 @@ import scalalib._
 
 val dottyVersion = Option(sys.props("dottyVersion"))
 
-object requests extends Cross[RequestsModule]((List("2.12.6", "2.13.0", "3.0.0-M1") ++ dottyVersion): _*)
+object requests extends Cross[RequestsModule]((List("2.12.6", "2.13.0", "3.0.0-M2") ++ dottyVersion): _*)
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
   def publishVersion = "0.6.5"
   def artifactName = "requests"
