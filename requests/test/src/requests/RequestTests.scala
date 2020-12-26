@@ -110,6 +110,14 @@ object RequestTests extends TestSuite{
         val res2 = requests.get("https://httpbin.org/cookies").text().trim
         assert(read(res2) == Obj("cookies" -> Obj()))
       }
+      test("space"){
+        val s = requests.Session(cookieValues = Map("hello" -> "hello, world"))
+        val res1 = s.get("https://httpbin.org/cookies").text().trim
+        assert(read(res1) == Obj("cookies" -> Obj("hello" -> "hello, world")))
+        s.get("https://httpbin.org/cookies/set?freeform=test+test")
+        val res2 = s.get("https://httpbin.org/cookies").text().trim
+        assert(read(res2) == Obj("cookies" -> Obj("freeform" -> "test test", "hello" -> "hello, world")))
+      }
     }
     // Tests fail with 'Request to https://httpbin.org/absolute-redirect/4 failed with status code 404'
     // test("redirects"){
