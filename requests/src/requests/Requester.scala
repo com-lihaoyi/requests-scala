@@ -191,13 +191,13 @@ case class Requester(verb: String,
           case c: HttpsURLConnection =>
             if (cert != null) {
               c.setSSLSocketFactory(Util.clientCertSocketFactory(cert, verifySslCerts))
-              if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+              if (!verifySslCerts) c.setHostnameVerifier(new HostnameVerifier { def verify(h: String, s: SSLSession) = true })
             } else if (sslContext != null) {
               c.setSSLSocketFactory(sslContext.getSocketFactory)
-              if (!verifySslCerts) c.setHostnameVerifier((_: String, _: SSLSession) => true)
+              if (!verifySslCerts) c.setHostnameVerifier(new HostnameVerifier { def verify(h: String, s: SSLSession) = true })
             } else if (!verifySslCerts) {
               c.setSSLSocketFactory(Util.noVerifySocketFactory)
-              c.setHostnameVerifier((_: String, _: SSLSession) => true)
+              c.setHostnameVerifier(new HostnameVerifier { def verify(h: String, s: SSLSession) = true })
             }
             c
           case c: HttpURLConnection => c
