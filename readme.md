@@ -12,7 +12,7 @@ If you use Requests-Scala and like it, you will probably enjoy the following boo
 - [*Hands-on Scala Programming*](https://www.handsonscala.com/)
 
 *Hands-on Scala* has uses Requests-Scala extensively throughout the book, and has
-the entirety of *Chapter 12: Working with HTTP APIs* dedicated to 
+the entirety of *Chapter 12: Working with HTTP APIs* dedicated to
 the library. *Hands-on Scala* is a great way to level up your skills in Scala
 in general and Requests-Scala in particular.
 
@@ -87,7 +87,7 @@ val r = requests.options("http://httpbin.org/get")
 
 ```scala
 val r = requests.get(
-    "http://httpbin.org/get", 
+    "http://httpbin.org/get",
     params = Map("key1" -> "value1", "key2" -> "value2")
 )
 ```
@@ -191,9 +191,9 @@ too big to fit in memory, while still benefiting from most of Requests' friendly
 
 ## Handling JSON
 
-Requests does not provide any built-in JSON support, but you can easily use a 
-third-party JSON library to work with it. This example shows how to use 
-[uJson](http://www.lihaoyi.com/upickle/) talk to a HTTP endpoint that requires a 
+Requests does not provide any built-in JSON support, but you can easily use a
+third-party JSON library to work with it. This example shows how to use
+[uJson](http://www.lihaoyi.com/upickle/) talk to a HTTP endpoint that requires a
 JSON-formatted body, either using `upickle.default.stream`:
 
 ```scala
@@ -243,9 +243,9 @@ val r = requests.post(
   data = requests.MultiPart(
     requests.MultiItem("name", new java.io.File("build.sc"), "file.txt"),
     // you can upload strings, and file name is optional
-    requests.MultiItem("name2", "Hello"), 
+    requests.MultiItem("name2", "Hello"),
     // bytes arrays are ok too
-    requests.MultiItem("name3", Array[Byte](1, 2, 3, 4)) 
+    requests.MultiItem("name3", Array[Byte](1, 2, 3, 4))
   )
 )
 ```
@@ -280,7 +280,7 @@ requests.get("https://httpbin.org/delay/1", readTimeout = 10)
 // TimeoutException
 
 requests.get("https://httpbin.org/delay/1", readTimeout = 1500)
-// ok 
+// ok
 
 requests.get("https://httpbin.org/delay/3", readTimeout = 1500)
 // TimeoutException
@@ -490,7 +490,7 @@ headers, cookies or other things:
 
 ```scala
 val s = requests.Session(
-  headers = Map("x-special-header" -> "omg"), 
+  headers = Map("x-special-header" -> "omg"),
   cookieValues = Map("cookie" -> "vanilla")
 )
 
@@ -531,7 +531,7 @@ common Scala HTTP clients:
 ```scala
 // Requests-Scala
 val r = requests.get(
-  "https://api.github.com/search/repositories", 
+  "https://api.github.com/search/repositories",
   params = Map("q" -> "http language:scala", "sort" -> "stars")
 )
 
@@ -619,12 +619,12 @@ val query = "http language:scala"
 // the `query` parameter is automatically url-encoded
 // `sort` is removed, as the value is not defined
 val request = sttp.get(uri"https://api.github.com/search/repositories?q=$query&sort=$sort")
-  
+
 implicit val backend = HttpURLConnectionBackend()
 val response = request.send()
 
-// response.unsafeBody: by default read into a String 
-println(response.unsafeBody)                     
+// response.unsafeBody: by default read into a String
+println(response.unsafeBody)
 ```
 ```scala
 // Dispatch
@@ -655,6 +655,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.6.7
+
+- Add support for Scala 3.0.0-RC2
 
 ### 0.6.5
 
