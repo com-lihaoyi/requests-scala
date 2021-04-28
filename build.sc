@@ -6,7 +6,7 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 val dottyVersion = Option(sys.props("dottyVersion"))
 
-object requests extends Cross[RequestsModule]((List("2.12.13", "2.13.5", "2.11.12", "3.0.0-RC2") ++ dottyVersion): _*)
+object requests extends Cross[RequestsModule]((List("2.12.13", "2.13.5", "2.11.12", "3.0.0-RC3") ++ dottyVersion): _*)
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule {
   def publishVersion = VcsVersion.vcsState().format()
   def artifactName = "requests"
@@ -21,12 +21,12 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
     )
   )
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::geny::0.6.8"
+    ivy"com.lihaoyi::geny::0.6.9"
   )
   object test extends Tests{
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::utest::0.7.8",
-      ivy"com.lihaoyi::ujson::1.3.11"
+      ivy"com.lihaoyi::utest::0.7.9",
+      ivy"com.lihaoyi::ujson::1.3.12"
     )
     def testFrameworks = Seq("utest.runner.Framework")
   }
