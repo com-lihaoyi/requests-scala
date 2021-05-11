@@ -289,7 +289,10 @@ case class Requester(verb: String,
               .iterator
               .flatten
               .flatMap(HttpCookie.parse(_).asScala)
-              .foreach(c => sess.cookies(c.getName) = c)
+              .sortedBy(_.hasExpired)
+              .foreach(
+                c => if c.hasExpired sess.cookies.remove(c.getName) else sess.cookies(c.getName) = c
+              )
           }
         }
 
