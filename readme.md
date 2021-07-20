@@ -208,7 +208,7 @@ Or by constructing `ujson.Value`s directly
 ```scala
 requests.post(
   "https://api.github.com/some/endpoint",
-  data = ujson.Obj("user-agent" -> "my-app/0.0.1")
+  data = ujson.Obj("user-agent" -> "my-app/0.0.1").render()
 )
 ```
 
