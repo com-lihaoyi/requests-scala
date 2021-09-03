@@ -160,10 +160,8 @@ object RequestTests extends TestSuite{
       }
       test("connect"){
         intercept[TimeoutException] {
-          requests.get("https://httpbin.org/delay/1", connectTimeout = 10)
+          requests.get("https://httpbin.org/delay/1", connectTimeout = 1)
         }
-        requests.get("https://httpbin.org/delay/1", connectTimeout = 1500)
-        requests.get("https://httpbin.org/delay/3", connectTimeout = 1500)
       }
     }
     test("failures"){
