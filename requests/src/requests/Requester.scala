@@ -281,13 +281,8 @@ case class Requester(verb: String,
             throw new InvalidCertException(url, e)
         }
 
-        println("headerFields")
-        println(headerFields.seq.mkString("\n"))
-        println("-headerFields")
         val deGzip = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("gzip"))
-        println("deGzip " + deGzip)
         val deDeflate = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("deflate"))
-        println("deDeflate " + deDeflate)
         def persistCookies() = {
           if (sess.persistCookies) {
             headerFields
