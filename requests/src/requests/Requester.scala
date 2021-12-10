@@ -34,6 +34,8 @@ trait BaseSession{
   lazy val options = Requester("OPTIONS", this)
   // unofficial
   lazy val patch = Requester("PATCH", this)
+
+  def send(method: String) = Requester(method, this)
 }
 
 object BaseSession{
