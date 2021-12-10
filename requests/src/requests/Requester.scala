@@ -1,7 +1,5 @@
 package requests
 
-import requests.Requester.methodField
-
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 import java.net.{HttpCookie, HttpURLConnection, InetSocketAddress}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
