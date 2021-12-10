@@ -3,9 +3,7 @@ package requests
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 import java.net.{HttpCookie, HttpURLConnection, InetSocketAddress}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
-
 import javax.net.ssl._
-
 import collection.JavaConverters._
 import scala.collection.mutable
 
@@ -283,7 +281,6 @@ case class Requester(verb: String,
 
         val deGzip = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("gzip"))
         val deDeflate = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("deflate"))
-
         def persistCookies() = {
           if (sess.persistCookies) {
             headerFields
@@ -333,7 +330,11 @@ case class Requester(verb: String,
             else connection.getErrorStream
 
           def processWrappedStream[V](f: java.io.InputStream => V): V = {
-            if (stream != null) {
+            // The HEAD method is identical to GET except that the server
+            // MUST NOT return a message-body in the response.
+            // https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html section 9.4
+            if (verb == "HEAD") f(new ByteArrayInputStream(Array()))
+            else if (stream != null) {
               try f(
                 if (deGzip) new GZIPInputStream(stream)
                 else if (deDeflate) new InflaterInputStream(stream)
