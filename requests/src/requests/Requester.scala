@@ -1,11 +1,11 @@
 package requests
 
+import requests.Requester.methodField
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 import java.net.{HttpCookie, HttpURLConnection, InetSocketAddress}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
-
 import javax.net.ssl._
-
 import collection.JavaConverters._
 import scala.collection.mutable
 
@@ -34,6 +34,8 @@ trait BaseSession{
   lazy val options = Requester("OPTIONS", this)
   // unofficial
   lazy val patch = Requester("PATCH", this)
+
+  def send(method: String) = Requester(method, this)
 }
 
 object BaseSession{
@@ -279,9 +281,13 @@ case class Requester(verb: String,
             throw new InvalidCertException(url, e)
         }
 
+        println("headerFields")
+        println(headerFields.seq.mkString("\n"))
+        println("-headerFields")
         val deGzip = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("gzip"))
+        println("deGzip " + deGzip)
         val deDeflate = autoDecompress && headerFields.get("content-encoding").toSeq.flatten.exists(_.contains("deflate"))
-
+        println("deDeflate " + deDeflate)
         def persistCookies() = {
           if (sess.persistCookies) {
             headerFields
@@ -331,7 +337,8 @@ case class Requester(verb: String,
             else connection.getErrorStream
 
           def processWrappedStream[V](f: java.io.InputStream => V): V = {
-            if (stream != null) {
+            if (verb.toLowerCase == "head") f(new ByteArrayInputStream(Array()))
+            else if (stream != null) {
               try f(
                 if (deGzip) new GZIPInputStream(stream)
                 else if (deDeflate) new InflaterInputStream(stream)

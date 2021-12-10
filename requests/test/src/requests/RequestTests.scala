@@ -77,6 +77,17 @@ object RequestTests extends TestSuite{
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
+      test("send"){
+        requests.send("get")("https://httpbin.org/get?hello=world&foo=baz")
+
+        val res1 = requests.send("put")(
+          "https://httpbin.org/put",
+          data = Map("hello" -> "world", "foo" -> "baz"),
+          chunkedUpload = true
+        ).text
+
+        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+      }
     }
     test("multipart"){
       for(chunkedUpload <- Seq(true, false)) {
@@ -279,6 +290,14 @@ object RequestTests extends TestSuite{
         verifySslCerts = false
       )
       assert(res.statusCode == 200)
+    }
+    test("gzipError"){
+      val response = requests.head("https://api.github.com/users/lihaoyi")
+      assert(response.statusCode == 200)
+      assert(response.statusMessage == "OK")
+      assert(response.data.array == Array[Byte]())
+      assert(response.headers.keySet.contains("content-length"))
+      assert(response.headers.keySet.contains("content-type"))
     }
   }
 }
