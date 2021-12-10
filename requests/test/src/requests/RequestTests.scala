@@ -77,6 +77,17 @@ object RequestTests extends TestSuite{
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
+      test("send"){
+        requests.send("get")("https://httpbin.org/get?hello=world&foo=baz")
+
+        val res1 = requests.send("put")(
+          "https://httpbin.org/put",
+          data = Map("hello" -> "world", "foo" -> "baz"),
+          chunkedUpload = true
+        ).text
+
+        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
+      }
     }
     test("multipart"){
       for(chunkedUpload <- Seq(true, false)) {
