@@ -337,6 +337,9 @@ case class Requester(verb: String,
             else connection.getErrorStream
 
           def processWrappedStream[V](f: java.io.InputStream => V): V = {
+            // The HEAD method is identical to GET except that the server
+            // MUST NOT return a message-body in the response.
+            // https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html section 9.4
             if (verb.toLowerCase == "head") f(new ByteArrayInputStream(Array()))
             else if (stream != null) {
               try f(
