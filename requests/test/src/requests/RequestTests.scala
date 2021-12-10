@@ -265,8 +265,8 @@ object RequestTests extends TestSuite{
       assert(response.statusCode == 200)
       assert(response.statusMessage == "OK")
       assert(response.data.array.isEmpty)
-      assert(response.headers.keySet.contains("content-length"))
-      assert(response.headers.keySet.contains("content-type"))
+      assert(response.headers.keySet.map(_.toLowerCase).contains("content-length"))
+      assert(response.headers.keySet.map(_.toLowerCase).contains("content-type"))
     }
   }
 }
