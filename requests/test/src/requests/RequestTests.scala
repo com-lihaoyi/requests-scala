@@ -295,7 +295,7 @@ object RequestTests extends TestSuite{
       val response = requests.head("https://api.github.com/users/lihaoyi")
       assert(response.statusCode == 200)
       assert(response.statusMessage == "OK")
-      assert(response.data.array == Array[Byte]())
+      assert(response.data.array.isEmpty)
       assert(response.headers.keySet.contains("content-length"))
       assert(response.headers.keySet.contains("content-type"))
     }
