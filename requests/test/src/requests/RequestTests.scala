@@ -57,26 +57,6 @@ object RequestTests extends TestSuite{
         )
         assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
-      test("post"){
-        for(chunkedUpload <- Seq(true, false)) {
-          val res1 = requests.post(
-            "https://httpbin.org/post",
-            data = new RequestBlob.FormEncodedRequestBlob(Map("hello" -> "world", "foo" -> "baz")),
-            chunkedUpload = chunkedUpload
-          ).text()
-          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
-        }
-      }
-      test("put") {
-        for (chunkedUpload <- Seq(true, false)) {
-          val res1 = requests.put(
-            "https://httpbin.org/put",
-            data = new RequestBlob.FormEncodedRequestBlob(Map("hello" -> "world", "foo" -> "baz")),
-            chunkedUpload = chunkedUpload
-          ).text()
-          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
-        }
-      }
     }
     test("multipart"){
       for(chunkedUpload <- Seq(true, false)) {

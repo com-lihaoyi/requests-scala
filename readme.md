@@ -81,6 +81,10 @@ val r = requests.delete("http://httpbin.org/delete")
 val r = requests.head("http://httpbin.org/head")
 
 val r = requests.options("http://httpbin.org/get")
+
+// dynamically choose what HTTP method to use
+val r = requests.send("put")("http://httpbin.org/put", data = Map("key" -> "value"))
+
 ```
 
 ### Passing in Parameters
