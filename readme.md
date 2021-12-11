@@ -1,4 +1,4 @@
-# Requests-Scala 0.6.5
+# Requests-Scala 0.7.0
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -46,9 +46,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.6.5" // mill
-"com.lihaoyi" %% "requests" % "0.6.5" // sbt
-compile "com.lihaoyi:requests_2.12:0.6.5" //gradle
+ivy"com.lihaoyi::requests:0.7.0" // mill
+"com.lihaoyi" %% "requests" % "0.7.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.7.0" //gradle
 ```
 
 ## Making a Request
@@ -659,6 +659,12 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.7.0
+
+- Allow `requests.send(method)(...)` to dynamically choose a HTTP method [#94](https://github.com/com-lihaoyi/requests-scala/pull/94)
+- Avoid crashing on gzipped HEAD requests [#95](https://github.com/com-lihaoyi/requests-scala/pull/95)
+- All exceptions now inherit from a `RequestsException` base class
 
 ### 0.6.7
 
