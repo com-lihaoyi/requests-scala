@@ -251,7 +251,7 @@ case class Requester(verb: String,
               .mkString("; ")
           )
         }
-        if (verb.toUpperCase == "POST" || verb.toUpperCase == "PUT" || verb.toUpperCase == "PATCH" || verb.toUpperCase == "DELETE") {
+        if (verb.toUpperCase == "GET" || verb.toUpperCase == "POST" || verb.toUpperCase == "PUT" || verb.toUpperCase == "PATCH" || verb.toUpperCase == "DELETE") {
           if (!chunkedUpload) {
             val bytes = new ByteArrayOutputStream()
             data.write(compress.wrap(bytes))
