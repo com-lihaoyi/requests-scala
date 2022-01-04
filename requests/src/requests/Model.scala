@@ -237,22 +237,22 @@ case class StreamHeaders(url: String,
   * auth and Proxy auth are supported
   */
 trait RequestAuth{
-  def header: Option[String]
+  def credentials: Option[String]
 }
 
 object RequestAuth{
   object Empty extends RequestAuth{
-    def header = None
+    def credentials = None
   }
   implicit def implicitBasic(x: (String, String)): Basic = new Basic(x._1, x._2)
   class Basic(username: String, password: String) extends RequestAuth{
-    def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
+    def credentials = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
   case class Proxy(username: String, password: String) extends RequestAuth{
-    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
+    def credentials = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
   case class Bearer(token: String) extends RequestAuth {
-    def header = Some(s"Bearer $token")
+    def credentials = Some(s"Bearer $token")
   }
 }
 

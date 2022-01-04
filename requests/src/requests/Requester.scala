@@ -230,7 +230,17 @@ case class Requester(verb: String,
         for((k, v) <- compress.headers) connection.setRequestProperty(k, v)
 
         connection.setReadTimeout(readTimeout)
-        auth.header.foreach(connection.setRequestProperty("Authorization", _))
+
+        auth match {
+          case basic: RequestAuth.Basic =>
+            connection.setRequestProperty("Authorization", basic.credentials.get)
+          case bearer: RequestAuth.Bearer =>
+            connection.setRequestProperty("Authorization", bearer.credentials.get)
+          case proxy: RequestAuth.Proxy =>
+            connection.setRequestProperty("Proxy-Authorization", proxy.credentials.get)
+          case RequestAuth.Empty =>
+        }
+
         connection.setConnectTimeout(connectTimeout)
         connection.setUseCaches(false)
         connection.setDoOutput(true)
