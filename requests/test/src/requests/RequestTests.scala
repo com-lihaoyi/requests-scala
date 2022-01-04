@@ -207,6 +207,39 @@ object RequestTests extends TestSuite{
         }
       }
     }
+    test("auth"){
+      test("basicAuth"){
+        val (username, password) = ("foo", "bar")
+        val rawCreds = s"$username:$password"
+        val encodedCreds = java.util.Base64.getEncoder.encodeToString(rawCreds.getBytes())
+        val auth = new RequestAuth.Basic(username, password)
+
+        val res = requests.get("https://httpbin.org/headers", auth=auth).text()
+        val hs = read(res)("headers").obj
+
+        assert(hs("Authorization").str == s"Basic $encodedCreds")
+      }
+      test("bearerAuth"){
+        val token = "foobar"
+        val auth = new RequestAuth.Bearer(token)
+
+        val res = requests.get("https://httpbin.org/headers", auth=auth).text()
+        val hs = read(res)("headers").obj
+
+        assert(hs("Authorization").str == s"Bearer $token")
+      }
+      test("proxyAuth"){
+        val (username, password) = ("foo", "bar")
+        val rawCreds = s"$username:$password"
+        val encodedCreds = java.util.Base64.getEncoder.encodeToString(rawCreds.getBytes())
+        val auth = new RequestAuth.Proxy(username, password)
+
+        val res = requests.get("https://httpbin.org/headers", auth=auth).text()
+        val hs = read(res)("headers").obj
+
+        assert(hs("Proxy-Authorization").str == s"Basic $encodedCreds")
+      }
+    }
     test("clientCertificate"){
       val base = "./requests/test/resources"
       val url = "https://client.badssl.com"
