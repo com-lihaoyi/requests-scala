@@ -229,15 +229,21 @@ object RequestTests extends TestSuite{
         assert(hs("Authorization").str == s"Bearer $token")
       }
       test("proxyAuth"){
-        val (username, password) = ("foo", "bar")
-        val rawCreds = s"$username:$password"
-        val encodedCreds = java.util.Base64.getEncoder.encodeToString(rawCreds.getBytes())
-        val auth = new RequestAuth.Proxy(username, password)
-
-        val res = requests.get("https://httpbin.org/headers", auth=auth).text()
-        val hs = read(res)("headers").obj
-
-        assert(hs("Proxy-Authorization").str == s"Basic $encodedCreds")
+        // @TODO Need a service that echos the Proxy-Authorization header back.
+        //
+        // From RFC: "Unlike Authorization, the Proxy-Authorization header field
+        // applies only to the next inbound proxy that demanded authentication
+        // using the Proxy-Authenticate field." [0]
+        //
+        // [0] https://tools.ietf.org/html/rfc7235#section-4.4
+        //
+        // val (username, password) = ("foo", "bar")
+        // val rawCreds = s"$username:$password"
+        // val encodedCreds = java.util.Base64.getEncoder.encodeToString(rawCreds.getBytes())
+        // val auth = new RequestAuth.Proxy(username, password)
+        // val res = requests.get("http://localhost:8881", auth=auth).text()
+        // val hs = read(res)("headers").obj
+        // assert(hs("Proxy-Authorization").str == s"Basic $encodedCreds")
       }
     }
     test("clientCertificate"){
