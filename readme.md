@@ -37,6 +37,7 @@ For a hands-on introduction to this library, take a look at the following blog p
     - [Compression](#compression)
     - [Cookies](#cookies)
     - [Redirects](#redirects)
+    - [Proxies](#proxies)
     - [Client Side Certificates](#client-side-certificates)
 - [Sessions](#sessions)
 - [Why Requests-Scala?](#why-requests-scala)
@@ -427,6 +428,36 @@ Response's `.history` field; each `.history` points 1 response earlier, forming
 a linked list of `Response` objects until the earliest response has a value of
 `None`. You can crawl up this linked list if you want to inspect the headers or
 other metadata of the intermediate redirects that brought you to your final value.
+
+### Proxies
+
+Usage of proxies is supported via the `proxy` parameter:
+```scala
+val proxyHost = "some.proxy.host"
+val proxyPort = 8001
+
+val r = requests.get(
+  "https://httpbin.org",
+  proxy=(proxyHost, proxyPort)
+)
+```
+
+For proxies that requires username/password authentication, you can provide them
+via `proxyAuth`:
+
+```scala
+val proxyHost = "some.proxy.host"
+val proxyPort = 8001
+
+val proxyUsername = "foo"
+val proxyPassword = "bar"
+
+val r = requests.get(
+  "https://httpbin.org",
+  proxy=(proxyHost, proxyPort),
+  proxyAuth=(proxyUsername, proxyPassword)
+)
+```
 
 ### Client Side Certificates
 
