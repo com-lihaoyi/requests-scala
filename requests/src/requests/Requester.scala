@@ -189,17 +189,6 @@ case class Requester(verb: String,
               java.net.Proxy.Type.HTTP, new InetSocketAddress(ip, port)
             )
             url1.openConnection(p)
-
-            // Apply auth headers, if any
-            if (proxyAuth != null) {
-              // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Proxy-Authorization
-              // @TODO This should support other auth types (digest, etc.)
-              val (proxyUser, proxyPass) = proxyAuth
-              connection.setRequestProperty(
-                "Proxy-Authorization",
-                "Basic " + java.util.Base64.getEncoder.encodeToString((proxyUser + ":" + proxyPass).getBytes())
-              )
-            }
           }
 
         connection = conn match{
@@ -245,6 +234,17 @@ case class Requester(verb: String,
         for((k, v) <- compress.headers) connection.setRequestProperty(k, v)
 
         connection.setReadTimeout(readTimeout)
+
+        // Apply proxy auth headers, if any
+        if (proxy != null && proxyAuth != null) {
+          // @TODO This should support other auth types (digest, etc.)
+          // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Proxy-Authorization
+          val (proxyUser, proxyPass) = proxyAuth
+          connection.setRequestProperty(
+            "Proxy-Authorization",
+            "Basic " + java.util.Base64.getEncoder.encodeToString((proxyUser + ":" + proxyPass).getBytes())
+          )
+        }
 
         auth.header.foreach(connection.setRequestProperty("Authorization", _))
         connection.setConnectTimeout(connectTimeout)
