@@ -15,6 +15,7 @@ trait BaseSession{
   def connectTimeout: Int
   def auth: RequestAuth
   def proxy: (String, Int)
+  def proxyAuth: (String, String)
   def cert: Cert
   def sslContext: SSLContext
   def maxRedirects: Int
@@ -72,7 +73,8 @@ case class Requester(verb: String,
     *             or MultiPart form data.
     * @param readTimeout How long to wait for data to be read before timing out
     * @param connectTimeout How long to wait for a connection before timing out
-    * @param proxy Host and port of a proxy you want to use
+    * @param proxy Host, port of HTTP proxy to use
+    * @param proxyAuth (Username, Password) authentication for HTTP proxy
     * @param cert Client certificate configuration
     * @param sslContext Client sslContext configuration
     * @param cookies Custom cookies to send up with this request
@@ -90,6 +92,7 @@ case class Requester(verb: String,
             readTimeout: Int = sess.readTimeout,
             connectTimeout: Int = sess.connectTimeout,
             proxy: (String, Int) = sess.proxy,
+            proxyAuth: (String, String) = sess.proxyAuth,
             cert: Cert = sess.cert,
             sslContext: SSLContext = sess.sslContext,
             cookies: Map[String, HttpCookie] = Map(),
@@ -106,9 +109,9 @@ case class Requester(verb: String,
     var streamHeaders: StreamHeaders = null
     val w = stream(
       url, auth, params, data.headers, headers, data, readTimeout,
-      connectTimeout, proxy, cert, sslContext, cookies, cookieValues, maxRedirects,
-      verifySslCerts, autoDecompress, compress, keepAlive, check, chunkedUpload,
-      onHeadersReceived = sh => streamHeaders = sh
+      connectTimeout, proxy, proxyAuth, cert, sslContext, cookies, cookieValues,
+      maxRedirects, verifySslCerts, autoDecompress, compress, keepAlive, check,
+      chunkedUpload, onHeadersReceived = sh => streamHeaders = sh
     )
 
     w.writeBytesTo(out)
@@ -150,6 +153,7 @@ case class Requester(verb: String,
              readTimeout: Int = sess.readTimeout,
              connectTimeout: Int = sess.connectTimeout,
              proxy: (String, Int) = sess.proxy,
+             proxyAuth: (String, String) = sess.proxyAuth,
              cert: Cert = sess.cert,
              sslContext: SSLContext = sess.sslContext,
              cookies: Map[String, HttpCookie] = Map(),
@@ -185,6 +189,17 @@ case class Requester(verb: String,
               java.net.Proxy.Type.HTTP, new InetSocketAddress(ip, port)
             )
             url1.openConnection(p)
+
+            // Apply auth headers, if any
+            if (proxyAuth != null) {
+              // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Proxy-Authorization
+              // @TODO This should support other auth types (digest, etc.)
+              val (proxyUser, proxyPass) = proxyAuth
+              connection.setRequestProperty(
+                "Proxy-Authorization",
+                "Basic " + java.util.Base64.getEncoder.encodeToString((proxyUser + ":" + proxyPass).getBytes())
+              )
+            }
           }
 
         connection = conn match{
@@ -231,16 +246,7 @@ case class Requester(verb: String,
 
         connection.setReadTimeout(readTimeout)
 
-        auth match {
-          case basic: RequestAuth.Basic =>
-            connection.setRequestProperty("Authorization", basic.credentials.get)
-          case bearer: RequestAuth.Bearer =>
-            connection.setRequestProperty("Authorization", bearer.credentials.get)
-          case proxy: RequestAuth.Proxy =>
-            connection.setRequestProperty("Proxy-Authorization", proxy.credentials.get)
-          case RequestAuth.Empty =>
-        }
-
+        auth.header.foreach(connection.setRequestProperty("Authorization", _))
         connection.setConnectTimeout(connectTimeout)
         connection.setUseCaches(false)
         connection.setDoOutput(true)
@@ -319,9 +325,9 @@ case class Requester(verb: String,
           val newUrl = current.headers("location").head
           stream(
             new java.net.URL(url1, newUrl).toString, auth, params, blobHeaders,
-            headers, data, readTimeout, connectTimeout, proxy, cert, sslContext, cookies,
-            cookieValues, maxRedirects - 1, verifySslCerts, autoDecompress,
-            compress, keepAlive, check, chunkedUpload, Some(current),
+            headers, data, readTimeout, connectTimeout, proxy, proxyAuth, cert,
+            sslContext, cookies, cookieValues, maxRedirects - 1, verifySslCerts,
+            autoDecompress, compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
           ).readBytesThrough(f)
         }else{
@@ -389,6 +395,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.proxyAuth,
     r.cert,
     r.sslContext,
     r.cookies,
@@ -418,6 +425,7 @@ case class Requester(verb: String,
     r.readTimeout,
     r.connectTimeout,
     r.proxy,
+    r.proxyAuth,
     r.cert,
     r.sslContext,
     r.cookies,
