@@ -13,11 +13,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [8, 11, 17]
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v2
         with:
-          java-version: 8
+          distribution: temurin
+          java-version: ${{matrix.java}}
       - name: Run tests
         run: ./mill -i all __.publishArtifacts __.test
   check-binary-compatibility:
@@ -26,8 +30,9 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 8
       - name: Check Binary Compatibility
         run: ./mill -i __.mimaReportBinaryIssues
@@ -46,8 +51,9 @@ jobs:
       LC_ALL: "en_US.UTF-8"
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: 8
       - name: Publish to Maven Central
         run: |
