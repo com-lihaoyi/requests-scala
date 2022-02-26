@@ -615,20 +615,16 @@ httpClient.expect[String](request)
 ```
 ```scala
 // sttp
-import com.softwaremill.sttp._
+import sttp.client3._
 
-val sort: Option[String] = None
-val query = "http language:scala"
+val request = basicRequest.response(asStringAlways)
+  .get(uri"https://api.github.com/search"
+    .addParams(Map("q" -> "http language:scala", "sort" -> "stars")))
 
-// the `query` parameter is automatically url-encoded
-// `sort` is removed, as the value is not defined
-val request = sttp.get(uri"https://api.github.com/search/repositories?q=$query&sort=$sort")
+val backend = HttpURLConnectionBackend()
+val response = backend.send(request)
 
-implicit val backend = HttpURLConnectionBackend()
-val response = request.send()
-
-// response.unsafeBody: by default read into a String
-println(response.unsafeBody)
+println(response.body)
 ```
 ```scala
 // Dispatch
