@@ -1,21 +1,17 @@
 package requests
 
-import java.net.InetSocketAddress
-
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpServer
 import java.io._
-import java.util.zip._
+import java.net.InetSocketAddress
+import java.util.zip.{GZIPInputStream, InflaterInputStream}
+import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
+import requests.Compress._
+import scala.annotation.tailrec
 import scala.collection.mutable.StringBuilder
 import utest._
 import ujson._
-import requests.Compress
-import requests.Compress._
-import scala.annotation.tailrec
 
 object RequestTests extends TestSuite{
-   val tests = Tests{
+  val tests = Tests{
     test("matchingMethodWorks"){
       val requesters = Seq(
         requests.delete,
@@ -40,7 +36,7 @@ object RequestTests extends TestSuite{
           }
         }
       }
-     }
+    }
 
     test("params"){
       test("get"){
@@ -88,7 +84,6 @@ object RequestTests extends TestSuite{
     }
 
     test("cookies"){
-
       test("session"){
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
         val res1 = s.get("https://httpbin.org/cookies").text().trim
@@ -114,7 +109,6 @@ object RequestTests extends TestSuite{
       }
     }
 
-    //Tests fail with 'Request to https://httpbin.org/absolute-redirect/4 failed with status code 404'
     test("redirects"){
       test("max"){
         val res1 = requests.get("https://httpbin.org/absolute-redirect/4")
@@ -191,30 +185,29 @@ object RequestTests extends TestSuite{
       (res1.bytes.length, res2.bytes.length, res3.bytes.length, res4.bytes.length)
     }
 
-     test("compression"){
-          val res1 = requests.post(
-            "https://httpbin.org/post",
-            compress = requests.Compress.None,
-            data = new RequestBlob.ByteSourceRequestBlob("Hello World")
-          )
-          assert(res1.text.contains(""""Hello World""""))
+    test("compression"){
+      val res1 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.None,
+        data = new RequestBlob.ByteSourceRequestBlob("Hello World")
+      )
+      assert(res1.text().contains(""""Hello World""""))
 
-          val res2 = requests.post(
-            "https://httpbin.org/post",
-            compress = requests.Compress.Gzip,
-            data = new RequestBlob.ByteSourceRequestBlob("I am cow")
-          )
-          assert(read(new String(res2.bytes))("data").toString ==
-             """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
+      val res2 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.Gzip,
+        data = new RequestBlob.ByteSourceRequestBlob("I am cow")
+      )
+      assert(read(new String(res2.bytes))("data").toString ==
+        """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
 
-          val res3 = requests.post(
-            "https://httpbin.org/post",
-            compress = requests.Compress.Deflate,
-            data = new RequestBlob.ByteSourceRequestBlob("Hear me moo")
-          )
-          assert(read(new String(res2.bytes))("data").toString == 
-            """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
-
+      val res3 = requests.post(
+        "https://httpbin.org/post",
+        compress = requests.Compress.Deflate,
+        data = new RequestBlob.ByteSourceRequestBlob("Hear me moo")
+      )
+      assert(read(new String(res2.bytes))("data").toString == 
+        """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
      }
 
     test("headers"){
@@ -299,18 +292,18 @@ object RequestTests extends TestSuite{
       * Compress with each compression mode and call server. Server expands
       * and passes it back so we can compare
       */
-  test("compressionData") {
-    import Compress._
-    val str = "I am deflater mouse"
-    Seq(None, Gzip, Deflate).foreach(c => 
-       Server.use {
+    test("compressionData") {
+      val str = "I am deflater mouse"
+      Seq(None, Gzip, Deflate).foreach(c => 
+        Server.use {
           assert(str == requests.post(
-                "http://localhost:58080/test",
-                compress = c,
-                data = str
-              ).data.toString)
-       })
-     }
+            "http://localhost:58080/test",
+            compress = c,
+            data = new RequestBlob.ByteSourceRequestBlob(str)
+          ).data.toString)
+        }
+      )
+    }
   }
 }
 
@@ -323,7 +316,7 @@ class Server extends HttpHandler {
 
   def stop(): Unit = server.stop(0)
 
-  override def handle(t: HttpExchange) {
+  override def handle(t: HttpExchange): Unit = {
       val h: java.util.List[String] = t.getRequestHeaders.get("Content-encoding")
       val c: Compress = if (h == null) None
          else if (h.contains("gzip")) Gzip
@@ -336,11 +329,11 @@ class Server extends HttpHandler {
 }
 
 object Server {
-   def use(doIt : => Unit) : Unit = {
-      val server = new Server
-      try doIt
-      finally server.stop()
-   }
+  def use(doIt : => Unit) : Unit = {
+    val server = new Server
+    try doIt
+    finally server.stop()
+  }
 }
 
 /**
@@ -363,12 +356,12 @@ class Plumper(c: Compress) {
 
     @tailrec
     def read(): Unit = {
-          val line = br.readLine
-          if (line != null) {
-            sb.append(line)
-            read
-          }
-        }
+      val line = br.readLine
+      if (line != null) {
+        sb.append(line)
+        read()
+      }
+    }
 
     read()
     br.close()

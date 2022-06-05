@@ -53,8 +53,8 @@ object Requester{
   }
 }
 case class Requester(verb: String,
-                     sess: BaseSession){
-  val CMD = verb.toUpperCase // allow submitting as lower case ...
+                     sess: BaseSession) {
+  val cmd = verb.toUpperCase // allow submitting as lower case ...
 
   /**
     * Makes a single HTTP request, and returns a [[Response]] object. Requires
@@ -200,8 +200,8 @@ case class Requester(verb: String,
         }
 
         connection.setInstanceFollowRedirects(false)
-        if (Requester.officialHttpMethods.contains(CMD)) {
-          connection.setRequestMethod(CMD)  
+        if (Requester.officialHttpMethods.contains(cmd)) {
+          connection.setRequestMethod(cmd)  
         } else {
           // HttpURLConnection enforces a list of official http METHODs, but not everyone abides by the spec
           // this hack allows us set an unofficial http method
@@ -209,15 +209,20 @@ case class Requester(verb: String,
             case cs: HttpsURLConnection =>
               cs.getClass.getDeclaredFields.find(_.getName == "delegate").foreach{ del =>
                 del.setAccessible(true)
-                Requester.methodField.set(del.get(cs), CMD)
+                Requester.methodField.set(del.get(cs), cmd)
               }
             case c =>
-              Requester.methodField.set(c, CMD)
+              Requester.methodField.set(c, cmd)
           }            
         }
 
-        Seq(blobHeaders, sess.headers, headers, compress.headers).
-           foreach(h => for((k, v) <- h) connection.setRequestProperty(k, v))
+        for((k, v) <- blobHeaders) connection.setRequestProperty(k, v)
+        
+        for((k, v) <- sess.headers) connection.setRequestProperty(k, v)
+        
+        for((k, v) <- headers) connection.setRequestProperty(k, v)
+        
+        for((k, v) <- compress.headers) connection.setRequestProperty(k, v)
 
         connection.setReadTimeout(readTimeout)
         auth.header.foreach(connection.setRequestProperty("Authorization", _))
@@ -242,18 +247,18 @@ case class Requester(verb: String,
           )
         }      
 
-        if (CMD == "POST" || CMD == "PUT" || CMD == "PATCH" || CMD == "DELETE") {
+        if (cmd == "POST" || cmd == "PUT" || cmd == "PATCH" || cmd == "DELETE") {
           if (!chunkedUpload) {
-              val bytes = new ByteArrayOutputStream()
-              withOs(compress.wrap(bytes)) { os => data.write(os) }
-              val byteArray = bytes.toByteArray
-              connection.setFixedLengthStreamingMode(byteArray.length)
-              withOs(connection.getOutputStream) { os => os.write(byteArray) }
-            } else {
-              connection.setChunkedStreamingMode(0)
-              withOs(compress.wrap(connection.getOutputStream)) { os => data.write(os) }
-            }
+            val bytes = new ByteArrayOutputStream()
+            usingOutputStream(compress.wrap(bytes)) { os => data.write(os) }
+            val byteArray = bytes.toByteArray
+            connection.setFixedLengthStreamingMode(byteArray.length)
+            usingOutputStream(connection.getOutputStream) { os => os.write(byteArray) }
+          } else {
+            connection.setChunkedStreamingMode(0)
+            usingOutputStream(compress.wrap(connection.getOutputStream)) { os => data.write(os) }
           }
+        }
 
         val (responseCode, responseMsg, headerFields) = try {(
           connection.getResponseCode,
@@ -305,7 +310,7 @@ case class Requester(verb: String,
             compress, keepAlive, check, chunkedUpload, Some(current),
             onHeadersReceived
           ).readBytesThrough(f)
-        }else{
+        } else{
           persistCookies()
           val streamHeaders = StreamHeaders(
             url,
@@ -324,7 +329,7 @@ case class Requester(verb: String,
             // The HEAD method is identical to GET except that the server
             // MUST NOT return a message-body in the response.
             // https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html section 9.4
-            if (CMD == "HEAD") f(new ByteArrayInputStream(Array()))
+            if (cmd == "HEAD") f(new ByteArrayInputStream(Array()))
             else if (stream != null) {
               try f(
                 if (deGzip) new GZIPInputStream(stream)
@@ -358,15 +363,9 @@ case class Requester(verb: String,
     }
   }
 
-  /**
-    * Do something with an OutputStream and close it
-    * @param os OutputStream
-    * @param fn 
-    */
-  private def withOs[T](os: OutputStream)(fn: OutputStream => T) : Unit = 
-    try fn(os) finally os.close()
+  private def usingOutputStream[T](os: OutputStream)(fn: OutputStream => T) : Unit = 
+      try fn(os) finally os.close()
   
-
   /**
     * Overload of [[Requester.apply]] that takes a [[Request]] object as configuration
     */
