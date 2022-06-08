@@ -18,6 +18,7 @@ object Scala2RequestTests extends TestSuite{
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
+
       test("put") {
         for (chunkedUpload <- Seq(true, false)) {
           val res1 = requests.put(
@@ -28,6 +29,7 @@ object Scala2RequestTests extends TestSuite{
           assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
+
       test("send"){
         requests.send("get")("https://httpbin.org/get?hello=world&foo=baz")
 

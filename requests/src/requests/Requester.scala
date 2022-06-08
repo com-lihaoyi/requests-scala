@@ -9,7 +9,6 @@ import scala.collection.mutable
 
 trait BaseSession{
   def headers: Map[String, String]
-
   def cookies: mutable.Map[String, HttpCookie]
   def readTimeout: Int
   def connectTimeout: Int
@@ -54,7 +53,7 @@ object Requester{
 }
 case class Requester(verb: String,
                      sess: BaseSession){
-
+  private val upperCaseVerb = verb.toUpperCase
 
   /**
     * Makes a single HTTP request, and returns a [[Response]] object. Requires
@@ -204,7 +203,6 @@ case class Requester(verb: String,
         }
 
         connection.setInstanceFollowRedirects(false)
-        val upperCaseVerb = verb.toUpperCase
         if (Requester.officialHttpMethods.contains(upperCaseVerb)) {
           connection.setRequestMethod(upperCaseVerb)
         } else {
@@ -250,17 +248,18 @@ case class Requester(verb: String,
               .map{case (k, v) => s"""$k="$v""""}
               .mkString("; ")
           )
-        }
-        if (verb.toUpperCase == "POST" || verb.toUpperCase == "PUT" || verb.toUpperCase == "PATCH" || verb.toUpperCase == "DELETE") {
+        }      
+
+        if (upperCaseVerb == "POST" || upperCaseVerb == "PUT" || upperCaseVerb == "PATCH" || upperCaseVerb == "DELETE") {
           if (!chunkedUpload) {
             val bytes = new ByteArrayOutputStream()
-            data.write(compress.wrap(bytes))
+            usingOutputStream(compress.wrap(bytes)) { os => data.write(os) }
             val byteArray = bytes.toByteArray
             connection.setFixedLengthStreamingMode(byteArray.length)
-            if (byteArray.nonEmpty) connection.getOutputStream.write(byteArray)
+            usingOutputStream(connection.getOutputStream) { os => os.write(byteArray) }
           } else {
             connection.setChunkedStreamingMode(0)
-            data.write(compress.wrap(connection.getOutputStream))
+            usingOutputStream(compress.wrap(connection.getOutputStream)) { os => data.write(os) }
           }
         }
 
@@ -333,7 +332,7 @@ case class Requester(verb: String,
             // The HEAD method is identical to GET except that the server
             // MUST NOT return a message-body in the response.
             // https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html section 9.4
-            if (verb == "HEAD") f(new ByteArrayInputStream(Array()))
+            if (upperCaseVerb == "HEAD") f(new ByteArrayInputStream(Array()))
             else if (stream != null) {
               try f(
                 if (deGzip) new GZIPInputStream(stream)
@@ -366,6 +365,9 @@ case class Requester(verb: String,
       }
     }
   }
+ 
+  private def usingOutputStream[T](os: OutputStream)(fn: OutputStream => T): Unit = 
+    try fn(os) finally os.close()
 
   /**
     * Overload of [[Requester.apply]] that takes a [[Request]] object as configuration

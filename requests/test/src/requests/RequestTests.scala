@@ -30,6 +30,7 @@ object RequestTests extends TestSuite{
         }
       }
     }
+
     test("params"){
       test("get"){
         // All in URL
@@ -58,6 +59,7 @@ object RequestTests extends TestSuite{
         assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
     }
+
     test("multipart"){
       for(chunkedUpload <- Seq(true, false)) {
         val response = requests.post(
@@ -73,8 +75,8 @@ object RequestTests extends TestSuite{
         assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
       }
     }
-    test("cookies"){
 
+    test("cookies"){
       test("session"){
         val s = requests.Session(cookieValues = Map("hello" -> "world"))
         val res1 = s.get("https://httpbin.org/cookies").text().trim
@@ -99,35 +101,37 @@ object RequestTests extends TestSuite{
         assert(read(res2) == Obj("cookies" -> Obj("freeform" -> "test test", "hello" -> "hello, world")))
       }
     }
-    // Tests fail with 'Request to https://httpbin.org/absolute-redirect/4 failed with status code 404'
-    // test("redirects"){
-      // test("max"){
-      //   val res1 = requests.get("https://httpbin.org/absolute-redirect/4")
-      //   assert(res1.statusCode == 200)
-      //   val res2 = requests.get("https://httpbin.org/absolute-redirect/5")
-      //   assert(res2.statusCode == 200)
-      //   val res3 = requests.get("https://httpbin.org/absolute-redirect/6", check = false)
-      //   assert(res3.statusCode == 302)
-      //   val res4 = requests.get("https://httpbin.org/absolute-redirect/6", maxRedirects = 10)
-      //   assert(res4.statusCode == 200)
-      // }
-      // test("maxRelative"){
-      //   val res1 = requests.get("https://httpbin.org/relative-redirect/4")
-      //   assert(res1.statusCode == 200)
-      //   val res2 = requests.get("https://httpbin.org/relative-redirect/5")
-      //   assert(res2.statusCode == 200)
-      //   val res3 = requests.get("https://httpbin.org/relative-redirect/6", check = false)
-      //   assert(res3.statusCode == 302)
-      //   val res4 = requests.get("https://httpbin.org/relative-redirect/6", maxRedirects = 10)
-      //   assert(res4.statusCode == 200)
-      // }
-    // }
+
+    test("redirects"){
+      test("max"){
+        val res1 = requests.get("https://httpbin.org/absolute-redirect/4")
+        assert(res1.statusCode == 200)
+        val res2 = requests.get("https://httpbin.org/absolute-redirect/5")
+        assert(res2.statusCode == 200)
+        val res3 = requests.get("https://httpbin.org/absolute-redirect/6", check = false)
+        assert(res3.statusCode == 302)
+        val res4 = requests.get("https://httpbin.org/absolute-redirect/6", maxRedirects = 10)
+        assert(res4.statusCode == 200)
+      }
+      test("maxRelative"){
+        val res1 = requests.get("https://httpbin.org/relative-redirect/4")
+        assert(res1.statusCode == 200)
+        val res2 = requests.get("https://httpbin.org/relative-redirect/5")
+        assert(res2.statusCode == 200)
+        val res3 = requests.get("https://httpbin.org/relative-redirect/6", check = false)
+        assert(res3.statusCode == 302)
+        val res4 = requests.get("https://httpbin.org/relative-redirect/6", maxRedirects = 10)
+        assert(res4.statusCode == 200)
+      }
+    }
+
     test("streaming"){
       val res1 = requests.get("http://httpbin.org/stream/5").text()
       assert(res1.linesIterator.length == 5)
       val res2 = requests.get("http://httpbin.org/stream/52").text()
       assert(res2.linesIterator.length == 52)
     }
+
     test("timeouts"){
       test("read"){
         intercept[TimeoutException] {
@@ -144,6 +148,7 @@ object RequestTests extends TestSuite{
         }
       }
     }
+
     test("failures"){
       intercept[UnknownHostException]{
         requests.get("https://doesnt-exist-at-all.com/")
@@ -156,6 +161,7 @@ object RequestTests extends TestSuite{
         requests.get("://doesnt-exist.com/")
       }
     }
+
     test("decompress"){
       val res1 = requests.get("https://httpbin.org/gzip")
       assert(read(res1.text()).obj("headers").obj("Host").str == "httpbin.org")
@@ -171,6 +177,7 @@ object RequestTests extends TestSuite{
 
       (res1.bytes.length, res2.bytes.length, res3.bytes.length, res4.bytes.length)
     }
+
     test("compression"){
       val res1 = requests.post(
         "https://httpbin.org/post",
@@ -184,16 +191,18 @@ object RequestTests extends TestSuite{
         compress = requests.Compress.Gzip,
         data = new RequestBlob.ByteSourceRequestBlob("I am cow")
       )
-      assert(res2.text().contains("data:application/octet-stream;base64,H4sIAAAAAAAAAA=="))
+      assert(read(new String(res2.bytes))("data").toString ==
+        """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
 
       val res3 = requests.post(
         "https://httpbin.org/post",
         compress = requests.Compress.Deflate,
         data = new RequestBlob.ByteSourceRequestBlob("Hear me moo")
       )
-      assert(res3.text().contains("data:application/octet-stream;base64,eJw="))
-      res3.text()
-    }
+      assert(read(new String(res2.bytes))("data").toString == 
+        """"data:application/octet-stream;base64,H4sIAAAAAAAAAPNUSMxVSM4vBwCAGeD4CAAAAA=="""")
+     }
+
     test("headers"){
       test("default"){
         val res = requests.get("https://httpbin.org/headers").text()
@@ -207,6 +216,7 @@ object RequestTests extends TestSuite{
         }
       }
     }
+
     test("clientCertificate"){
       val base = "./requests/test/resources"
       val url = "https://client.badssl.com"
@@ -253,6 +263,7 @@ object RequestTests extends TestSuite{
         assert(res.statusCode == 400)
       }
     }
+
     test("selfSignedCertificate"){
       val res = requests.get(
         "https://self-signed.badssl.com",
@@ -260,6 +271,7 @@ object RequestTests extends TestSuite{
       )
       assert(res.statusCode == 200)
     }
+
     test("gzipError"){
       val response = requests.head("https://api.github.com/users/lihaoyi")
       assert(response.statusCode == 200)
@@ -267,6 +279,24 @@ object RequestTests extends TestSuite{
       assert(response.data.array.isEmpty)
       assert(response.headers.keySet.map(_.toLowerCase).contains("content-length"))
       assert(response.headers.keySet.map(_.toLowerCase).contains("content-type"))
+    }
+
+    /**
+      * Compress with each compression mode and call server. Server expands
+      * and passes it back so we can compare
+      */
+    test("compressionData") {
+      import requests.Compress._
+      val str = "I am deflater mouse"
+      Seq(None, Gzip, Deflate).foreach(c => 
+        ServerUtils.usingEchoServer { port =>
+          assert(str == requests.post(
+            s"http://localhost:$port/echo",
+            compress = c,
+            data = new RequestBlob.ByteSourceRequestBlob(str)
+          ).data.toString)
+        }
+      )
     }
   }
 }
