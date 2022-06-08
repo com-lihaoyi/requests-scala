@@ -11,7 +11,7 @@ import scala.collection.mutable.StringBuilder
 object ServerUtils {
   def usingEchoServer(f: Int => Unit): Unit = {
     val server = new EchoServer
-    try f(server.getPort)
+    try f(server.getPort())
     finally server.stop()
   }
 
