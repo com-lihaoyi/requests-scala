@@ -1,12 +1,5 @@
 package requests
 
-import java.io._
-import java.net.InetSocketAddress
-import java.util.zip.{GZIPInputStream, InflaterInputStream}
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
-import requests.Compress._
-import scala.annotation.tailrec
-import scala.collection.mutable.StringBuilder
 import utest._
 import ujson._
 
@@ -293,80 +286,17 @@ object RequestTests extends TestSuite{
       * and passes it back so we can compare
       */
     test("compressionData") {
+      import requests.Compress._
       val str = "I am deflater mouse"
       Seq(None, Gzip, Deflate).foreach(c => 
-        Server.use {
+        ServerUtils.usingEchoServer { port =>
           assert(str == requests.post(
-            "http://localhost:58080/test",
+            s"http://localhost:$port/echo",
             compress = c,
             data = new RequestBlob.ByteSourceRequestBlob(str)
           ).data.toString)
         }
       )
     }
-  }
-}
-
-/** A server we start for above test or two. Assumes port 58080 is available */
-class Server extends HttpHandler {
-  val server: HttpServer = HttpServer.create(new InetSocketAddress(58080), 0)
-  server.createContext("/test", this)
-  server.setExecutor(null); // default executor
-  server.start();
-
-  def stop(): Unit = server.stop(0)
-
-  override def handle(t: HttpExchange): Unit = {
-      val h: java.util.List[String] = t.getRequestHeaders.get("Content-encoding")
-      val c: Compress = if (h == null) None
-         else if (h.contains("gzip")) Gzip
-         else if (h.contains("deflate")) Deflate
-         else None
-      val msg = new Plumper(c).decompress(t.getRequestBody)
-      t.sendResponseHeaders(200, msg.length)
-      t.getResponseBody.write(msg.getBytes())
-    }
-}
-
-object Server {
-  def use(doIt : => Unit) : Unit = {
-    val server = new Server
-    try doIt
-    finally server.stop()
-  }
-}
-
-/**
-  * Stream uncompresser
-  * @param c Compression mode
-  */
-class Plumper(c: Compress) {
-
-  private def wrap(is: InputStream) : InputStream = 
-      c match {
-        case None => is
-        case Gzip => new GZIPInputStream(is)
-        case Deflate => new InflaterInputStream(is)
-      }  
-
-  def decompress(compressed: InputStream): String = {
-    val gis = wrap(compressed)
-    val br = new BufferedReader(new InputStreamReader(gis, "UTF-8"))
-    val sb = new StringBuilder()
-
-    @tailrec
-    def read(): Unit = {
-      val line = br.readLine
-      if (line != null) {
-        sb.append(line)
-        read()
-      }
-    }
-
-    read()
-    br.close()
-    gis.close()
-    compressed.close()
-    sb.toString()
   }
 }
