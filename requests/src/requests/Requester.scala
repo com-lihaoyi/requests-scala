@@ -6,7 +6,6 @@ import java.util.zip.{GZIPInputStream, InflaterInputStream}
 import javax.net.ssl._
 import collection.JavaConverters._
 import scala.collection.mutable
-import java.net.URLConnection
 
 trait BaseSession{
   def headers: Map[String, String]
