@@ -1,4 +1,4 @@
-# Requests-Scala 0.7.0
+# Requests-Scala 0.7.1
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,20 +26,38 @@ For a hands-on introduction to this library, take a look at the following blog p
 
 ## Contents
 
-- [Making a Request](#making-a-request)
+- [Requests-Scala 0.7.1](#requests-scala-071)
+  - [Contents](#contents)
+  - [Getting Started](#getting-started)
+  - [Making a Request](#making-a-request)
     - [Passing in Parameters](#passing-in-parameters)
     - [Response Content](#response-content)
-- [Streaming Requests](#streaming-requests)
-- [Multipart Uploads](#multipart-uploads)
-- [Misc Configuration](#misc-configuration)
+  - [Streaming Requests](#streaming-requests)
+  - [Handling JSON](#handling-json)
+  - [Multipart Uploads](#multipart-uploads)
+  - [Misc Configuration](#misc-configuration)
     - [Custom Headers](#custom-headers)
     - [Timeouts](#timeouts)
     - [Compression](#compression)
     - [Cookies](#cookies)
     - [Redirects](#redirects)
     - [Client Side Certificates](#client-side-certificates)
-- [Sessions](#sessions)
-- [Why Requests-Scala?](#why-requests-scala)
+  - [Sessions](#sessions)
+  - [Why Requests-Scala?](#why-requests-scala)
+  - [Changelog](#changelog)
+    - [0.7.1](#071)
+    - [0.7.0](#070)
+    - [0.6.7](#067)
+    - [0.6.5](#065)
+    - [0.5.1](#051)
+    - [0.4.7](#047)
+    - [0.3.0](#030)
+    - [0.2.0](#020)
+    - [0.1.9](#019)
+    - [0.1.8](#018)
+    - [0.1.7](#017)
+    - [0.1.6](#016)
+    - [0.1.5](#015)
 
 ## Getting Started
 
@@ -655,6 +673,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.7.1
+
+- Fix issue with data buffers not being flushed when compression is enabled [#108](https://github.com/com-lihaoyi/requests-scala/pull/108)
 
 ### 0.7.0
 
