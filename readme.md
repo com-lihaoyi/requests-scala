@@ -134,7 +134,7 @@ requests.post("https://httpbin.org/post", data = java.nio.file.Paths.get("thing.
 ```
 
 The `data` parameter also supports anything that implements the
-[Writable](https://github.com/lihaoyi/geny#writable) interface, such as
+[Writable](https://github.com/com-lihaoyi/geny#writable) interface, such as
 [ujson.Value](http://com-lihaoyi.github.io/upickle/#uJson)s,
 [uPickle](http://com-lihaoyi.github.io/upickle)'s `upickle.default.writable` values,
 or [Scalatags](http://com-lihaoyi.github.io/scalatags/)'s `Tag`s
@@ -184,8 +184,8 @@ Requests exposes the `requests.get.stream` (and equivalent
 perform streaming uploads/downloads without needing to load the entire
 request/response into memory. This is useful if you are upload/downloading large
 files or data blobs. `.stream` returns a
-[Readable](https://github.com/lihaoyi/geny#readable) value, that can be then
-passed to methods like [os.write](https://github.com/lihaoyi/os-lib#oswrite),
+[Readable](https://github.com/com-lihaoyi/geny#readable) value, that can be then
+passed to methods like [os.write](https://github.com/com-lihaoyi/os-lib#oswrite),
 `fastparse.parse` or `upickle.default.read` to handle the received data in a
 streaming fashion:
 
@@ -215,7 +215,7 @@ too big to fit in memory, while still benefiting from most of Requests' friendly
 
 Requests does not provide any built-in JSON support, but you can easily use a
 third-party JSON library to work with it. This example shows how to use
-[uJson](http://www.lihaoyi.com/upickle/) talk to a HTTP endpoint that requires a
+[uJson](https://com-lihaoyi.github.io/upickle/) talk to a HTTP endpoint that requires a
 JSON-formatted body, either using `upickle.default.stream`:
 
 ```scala
@@ -254,7 +254,7 @@ json.arr(0).obj.keys
 
 While Requests-Scala doesn't come bundled with JSON functionality, it is trivial
 to use it together with any other 3rd party JSON library (I like
-[uJson](http://www.lihaoyi.com/upickle/)) So just pick whatever library you
+[uJson](https://github.com/com-lihaoyi/upickle)) So just pick whatever library you
 want.
 
 ## Multipart Uploads
@@ -532,7 +532,7 @@ r2.text
 There is a whole zoo of HTTP clients in the Scala ecosystem. Akka-http, Play-WS,
 STTP, HTTP4S, Scalaj-HTTP, RosHTTP, Dispatch. Nevertheless, none of them come
 close to the ease and weightlessness of using Kenneth Reitz's
-[Requests](http://docs.python-requests.org/) library: too many implicits,
+[Requests](https://requests.readthedocs.io/en/latest/) library: too many implicits,
 operators, builders, monads, and other things.
 
 When I want to make a HTTP request, I do not want to know about
@@ -657,7 +657,7 @@ request is just a function call that takes parameters; that is all you need to
 know.
 
 As it turns out, Kenneth Reitz's Requests is
-[not a lot of code](https://github.com/requests/requests/tree/master/requests).
+[not a lot of code](https://github.com/requests/requests/tree/main/requests).
 Most of the heavy lifting is done in other libraries, and his library is a just
 thin-shim that makes the API 10x better. It turns out on the JVM most of the
 heavy lifting is also done for you, by `java.net.HttpUrlConnection` in the
