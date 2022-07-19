@@ -31,7 +31,7 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
   )
   object test extends Tests with TestModule.Utest {
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::utest::0.7.10",
+      ivy"com.lihaoyi::utest::0.7.11",
       ivy"com.lihaoyi::ujson::1.3.13"
     )
   }
