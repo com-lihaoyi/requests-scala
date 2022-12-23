@@ -1,19 +1,22 @@
 import mill._
 import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
 import scalalib._
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.3.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`com.github.lolgab::mill-mima::0.0.10`
+import $ivy.`com.github.lolgab::mill-mima::0.0.13`
 import com.github.lolgab.mill.mima._
 
-val dottyVersion = Option(sys.props("dottyVersion"))
+val dottyVersion = sys.props.get("dottyVersion")
 
-object requests extends Cross[RequestsModule]((List("2.12.13", "2.13.5", "2.11.12", "3.0.0") ++ dottyVersion): _*)
+val scalaVersions = List("2.12.17", "2.13.10", "2.11.12", "3.1.1") ++ dottyVersion
+
+object requests extends Cross[RequestsModule](scalaVersions: _*)
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule with Mima {
   def publishVersion = VcsVersion.vcsState().format()
-  def mimaPreviousVersions = Seq("0.7.0") ++ VcsVersion.vcsState().lastTag.toSeq
+  def mimaPreviousVersions = (Seq("0.7.0", "0.7.1") ++ VcsVersion.vcsState().lastTag.toSeq).distinct
   override def mimaBinaryIssueFilters = Seq(
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send")
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send"),
+    ProblemFilter.exclude[DirectMissingMethodProblem]("requests.Response.string")
   )
   def artifactName = "requests"
   def pomSettings = PomSettings(
@@ -27,7 +30,7 @@ class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule wit
     )
   )
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::geny::0.6.10"
+    ivy"com.lihaoyi::geny::1.0.0"
   )
   object test extends Tests with TestModule.Utest {
     def ivyDeps = Agg(
