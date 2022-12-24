@@ -8,7 +8,7 @@ import com.github.lolgab.mill.mima._
 
 val dottyVersion = sys.props.get("dottyVersion")
 
-val scalaVersions = List("2.12.17", "2.13.10", "2.11.12", "3.1.1") ++ dottyVersion
+val scalaVersions = List("2.12.17", "2.13.10", "2.11.12", "3.1.3") ++ dottyVersion
 
 object requests extends Cross[RequestsModule](scalaVersions: _*)
 class RequestsModule(val crossScalaVersion: String) extends CrossScalaModule with PublishModule with Mima {
