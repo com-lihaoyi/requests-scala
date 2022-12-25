@@ -1,4 +1,4 @@
-# Requests-Scala 0.7.1
+# Requests-Scala 0.8.0
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,7 @@ For a hands-on introduction to this library, take a look at the following blog p
 
 ## Contents
 
-- [Requests-Scala 0.7.1](#requests-scala-071)
+- [Requests-Scala 0.8.0](#requests-scala-080)
   - [Contents](#contents)
   - [Getting Started](#getting-started)
   - [Making a Request](#making-a-request)
@@ -45,6 +45,7 @@ For a hands-on introduction to this library, take a look at the following blog p
   - [Sessions](#sessions)
   - [Why Requests-Scala?](#why-requests-scala)
   - [Changelog](#changelog)
+    - [0.8.0](#080)
     - [0.7.1](#071)
     - [0.7.0](#070)
     - [0.6.7](#067)
@@ -64,9 +65,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.7.0" // mill
-"com.lihaoyi" %% "requests" % "0.7.0" // sbt
-compile "com.lihaoyi:requests_2.12:0.7.0" //gradle
+ivy"com.lihaoyi::requests:0.8.0" // mill
+"com.lihaoyi" %% "requests" % "0.8.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.8.0" //gradle
 ```
 
 ## Making a Request
@@ -673,6 +674,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.8.0
+
+- Update Geny to 1.0.0 [#120](https://github.com/com-lihaoyi/requests-scala/pull/120)
 
 ### 0.7.1
 
