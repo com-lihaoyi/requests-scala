@@ -3,7 +3,7 @@ import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
 import scalalib._
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.3.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`com.github.lolgab::mill-mima::0.0.13`
+import $ivy.`com.github.lolgab::mill-mima::0.0.18`
 import com.github.lolgab.mill.mima._
 
 val dottyVersion = sys.props.get("dottyVersion")
