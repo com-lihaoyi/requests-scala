@@ -1,8 +1,8 @@
 import mill._
 import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
 import scalalib._
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.3.1-8-37c08a`
-import $ivy.`com.github.lolgab::mill-mima::0.0.21`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.0`
+import $ivy.`com.github.lolgab::mill-mima::0.0.23`
 
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import com.github.lolgab.mill.mima._
@@ -33,7 +33,7 @@ trait RequestsModule extends CrossScalaModule with PublishModule with Mima {
 
   def ivyDeps = Agg(ivy"com.lihaoyi::geny::1.0.0")
 
-  object test extends Tests with TestModule.Utest {
+  object test extends ScalaTests with TestModule.Utest {
     def ivyDeps = Agg(
       ivy"com.lihaoyi::utest::0.7.10",
       ivy"com.lihaoyi::ujson::1.3.13"
