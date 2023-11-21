@@ -51,6 +51,7 @@ case class Request(url: String,
                    readTimeout: Int = 0,
                    connectTimeout: Int = 0,
                    proxy: (String, Int) = null,
+                   proxyAuth: (String, String) = null,
                    cert: Cert = null,
                    sslContext: SSLContext = null,
                    cookies: Map[String, HttpCookie] = Map(),
@@ -234,7 +235,7 @@ case class StreamHeaders(url: String,
 }
 /**
   * Different ways you can authorize a HTTP request; by default, HTTP Basic
-  * auth and Proxy auth are supported
+  * and Bearer auth are supported
   */
 trait RequestAuth{
   def header: Option[String]
@@ -247,9 +248,6 @@ object RequestAuth{
   implicit def implicitBasic(x: (String, String)): Basic = new Basic(x._1, x._2)
   class Basic(username: String, password: String) extends RequestAuth{
     def header = Some("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
-  }
-  case class Proxy(username: String, password: String) extends RequestAuth{
-    def header = Some("Proxy-Authorization " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()))
   }
   case class Bearer(token: String) extends RequestAuth {
     def header = Some(s"Bearer $token")

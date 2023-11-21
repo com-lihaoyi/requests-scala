@@ -13,6 +13,8 @@ package object requests extends _root_.requests.BaseSession {
 
   def proxy = null
 
+  def proxyAuth = null
+
   def cert: Cert = null
 
   def sslContext: SSLContext = null

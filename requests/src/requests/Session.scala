@@ -16,6 +16,7 @@ import scala.collection.mutable
   * @param readTimeout How long to wait for data to be read before timing out
   * @param connectTimeout How long to wait for a connection before timing out
   * @param proxy Host and port of a proxy you want to use
+  * @param proxyAuth Username and password of HTTP proxy
   * @param cookies Custom cookies to send up with this request
   * @param maxRedirects How many redirects to automatically resolve; defaults to 5.
   *                     You can also set it to 0 to prevent Requests from resolving
@@ -27,6 +28,7 @@ case class Session(headers: Map[String, String] = BaseSession.defaultHeaders,
                    cookies: mutable.Map[String, HttpCookie] = mutable.LinkedHashMap.empty[String, HttpCookie],
                    auth: RequestAuth = RequestAuth.Empty,
                    proxy: (String, Int) = null,
+                   proxyAuth: (String, String) = null,
                    cert: Cert = null,
                    sslContext: SSLContext = null,
                    persistCookies: Boolean = true,
