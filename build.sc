@@ -14,6 +14,9 @@ val scalaVersions = List("2.12.17", "2.13.10", "2.11.12", "3.1.1") ++ dottyVersi
 object requests extends Cross[RequestsModule](scalaVersions)
 trait RequestsModule extends CrossScalaModule with PublishModule with Mima {
   def publishVersion = VcsVersion.vcsState().format()
+  def publishProperties = super.publishProperties() ++ Map(
+    "info.releaseNotesURL" -> "https://github.com/com-lihaoyi/requests-scala#changelog"
+  )
   def mimaPreviousVersions = (Seq("0.7.0", "0.7.1") ++ VcsVersion.vcsState().lastTag.toSeq).distinct
   override def mimaBinaryIssueFilters = Seq(
     ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send"),
