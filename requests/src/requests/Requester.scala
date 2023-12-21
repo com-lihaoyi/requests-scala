@@ -245,7 +245,7 @@ case class Requester(verb: String,
           connection.setRequestProperty(
             "Cookie",
             allCookies
-              .map{case (k, v) => s"""$k="$v""""}
+              .map{case (k, v) => s"$k=$v"}
               .mkString("; ")
           )
         }      
