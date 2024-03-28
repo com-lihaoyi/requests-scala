@@ -70,42 +70,51 @@ case class Request(url: String,
   * by the implicit constructors.
   */
 trait RequestBlob{
+  val contentType: Option[String]
   def headers: Seq[(String, String)] = Nil
   def write(out: java.io.OutputStream): Unit
+
+  protected def contentTypeAsSeq: Seq[(String, String)] = {
+    contentType.map(value => Seq("Content-Type" -> value)).getOrElse(Seq.empty)
+  }
 }
 object RequestBlob{
   object EmptyRequestBlob extends RequestBlob{
+    override val contentType: Option[String] = None
     def write(out: java.io.OutputStream): Unit = ()
   }
 
   implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
     private[this] val s = f(x)
+
+    override val contentType: Option[String] = s.httpContentType
     override def headers =
       super.headers ++
-      s.httpContentType.map("Content-Type" -> _) ++
+      contentTypeAsSeq ++
       s.contentLength.map("Content-Length" -> _.toString)
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob{
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream",
+    override val contentType: Option[String] = Some("application/octet-stream")
+    override def headers = super.headers ++ contentTypeAsSeq ++ Seq(
       "Content-Length" -> x.length().toString
     )
+    
     def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
   implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob{
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/octet-stream",
+    override val contentType: Option[String] = Some("application/octet-stream")
+    override def headers = super.headers ++ contentTypeAsSeq ++ Seq(
       "Content-Length" -> java.nio.file.Files.size(x).toString
     )
+
     def write(out: java.io.OutputStream) = Util.transferTo(java.nio.file.Files.newInputStream(x), out)
   }
 
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends RequestBlob{
     val serialized = Util.urlEncode(x).getBytes
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/x-www-form-urlencoded"
-    )
+    override val contentType: Option[String] = Some("application/x-www-form-urlencoded")
+    override def headers = super.headers ++ contentTypeAsSeq
     def write(out: java.io.OutputStream) = {
       out.write(serialized)
     }
@@ -113,6 +122,8 @@ object RequestBlob{
 
   implicit class MultipartFormRequestBlob(val parts: Iterable[MultiItem]) extends RequestBlob{
     val boundary = UUID.randomUUID().toString
+    override val contentType: Option[String] =  Some(s"multipart/form-data; boundary=$boundary")
+    
     val crlf = "\r\n"
     val pref = "--"
 
@@ -123,15 +134,16 @@ object RequestBlob{
 
     val partBytes = parts.map(p => (p.name.getBytes(), if (p.filename == null) Array[Byte]() else p.filename.getBytes(), p))
 
-    override def headers = Seq(
-      "Content-Type" -> s"multipart/form-data; boundary=$boundary"
-    )
+    override def headers = contentTypeAsSeq
     def write(out: java.io.OutputStream) = {
       def writeBytes(s: String): Unit = out.write(s.getBytes())
 
       partBytes.foreach {
         case(name, filename, part) =>
           writeBytes(pref + boundary + crlf)
+          part.data.contentType.foreach { contentType =>
+            writeBytes(s"Content-Type: $contentType" + crlf)
+          }
           writeBytes(ContentDisposition)
           out.write(name)
           if (filename.nonEmpty){
