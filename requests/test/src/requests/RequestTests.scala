@@ -3,6 +3,8 @@ package requests
 import utest._
 import ujson._
 
+import java.io.File
+
 object RequestTests extends TestSuite{
   val tests = Tests{
     test("matchingMethodWorks"){
@@ -62,17 +64,25 @@ object RequestTests extends TestSuite{
 
     test("multipart"){
       for(chunkedUpload <- Seq(true, false)) {
+        val path = getClass.getResource("/license.zip").getPath
+        val file = new File(path)
         val response = requests.post(
           "http://httpbin.org/post",
           data = MultiPart(
             MultiItem("file1", "Hello!".getBytes, "foo.txt"),
-            MultiItem("file2", "Goodbye!")
+            MultiItem("file2", "Goodbye!"),
+            MultiItem("file3", file, "license.zip"),
+            MultiItem("file4", file.toPath, "license.zip")
           ),
           chunkedUpload = chunkedUpload
         ).text()
 
-        assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
+        assert(read(response).obj("files").obj("file1").str == "Hello!")
         assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
+        //TODO - These tests are generating false positives, as httpbin.org is adding the application/octet-stream header, even if the header is not in the request, if the server detects that the payload is a file in binary format. 
+        // Leaving these tests here as a reminder to update the testing strategy for these and other tests that check for the application/octet-stream header.
+        assert(read(response).obj("files").obj("file3").toString().contains("data:application/octet-stream;base64"))
+        assert(read(response).obj("files").obj("file4").toString().contains("data:application/octet-stream;base64"))
       }
     }
 
