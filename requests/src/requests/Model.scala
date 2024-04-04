@@ -132,6 +132,9 @@ object RequestBlob{
       partBytes.foreach {
         case(name, filename, part) =>
           writeBytes(pref + boundary + crlf)
+          part.data.headers.foreach { case (headerName, headerValue) =>
+            writeBytes(s"$headerName: $headerValue$crlf")
+          }
           writeBytes(ContentDisposition)
           out.write(name)
           if (filename.nonEmpty){
