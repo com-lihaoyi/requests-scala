@@ -1,4 +1,4 @@
-# Requests-Scala 0.8.0
+# Requests-Scala 0.8.1
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,7 @@ For a hands-on introduction to this library, take a look at the following blog p
 
 ## Contents
 
-- [Requests-Scala 0.8.0](#requests-scala-080)
+- [Requests-Scala 0.8.1](#requests-scala-081)
   - [Contents](#contents)
   - [Getting Started](#getting-started)
   - [Making a Request](#making-a-request)
@@ -65,9 +65,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.8.0" // mill
-"com.lihaoyi" %% "requests" % "0.8.0" // sbt
-compile "com.lihaoyi:requests_2.12:0.8.0" //gradle
+ivy"com.lihaoyi::requests:0.8.1" // mill
+"com.lihaoyi" %% "requests" % "0.8.1" // sbt
+compile "com.lihaoyi:requests_2.12:0.8.1" //gradle
 ```
 
 ## Making a Request
@@ -674,6 +674,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.8.1
+
+- fix: content type header not present in multipart item ([#154](https://github.com/com-lihaoyi/requests-scala/pull/154))
 
 ### 0.8.0
 
