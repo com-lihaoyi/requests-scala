@@ -64,8 +64,8 @@ case class Request(url: String,
 
 /**
   * Represents the different things you can upload in the body of a HTTP
-  * request. By default allows form-encoded key-value pairs, arrays of bytes,
-  * strings, files, and inputstreams. These types can be passed directly to
+  * request. By default, allows form-encoded key-value pairs, arrays of bytes,
+  * strings, files, and InputStreams. These types can be passed directly to
   * the `data` parameter of [[Requester.apply]] and will be wrapped automatically
   * by the implicit constructors.
   */
@@ -76,6 +76,7 @@ trait RequestBlob{
 object RequestBlob{
   object EmptyRequestBlob extends RequestBlob{
     def write(out: java.io.OutputStream): Unit = ()
+    override def headers = Seq("Content-Length" -> "0")
   }
 
   implicit class ByteSourceRequestBlob[T](x: T)(implicit f: T => geny.Writable) extends RequestBlob{
@@ -176,18 +177,21 @@ class ResponseBlob(val bytes: Array[Byte]){
 
 
 /**
-  * Represents a HTTP response
-  *
-  * @param url the URL that the original request was made to
-  * @param statusCode the status code of the response
-  * @param statusMessage the status message of the response
-  * @param headers the raw headers the server sent back with the response
-  * @param data the response body; may contain HTML, JSON, or binary or textual data
-  * @param history the response of any redirects that were performed before
-  *                arriving at the current response
-  */
+ * Represents a HTTP response
+ *
+ * @param url           the URL that the original request was made to
+ * @param statusCode    the status code of the response
+ * @param statusMessage a string that describes the status code.
+ *                      This is not the reason phrase sent by the server,
+ *                      but a string describing [[statusCode]], as hardcoded in this library
+ * @param headers       the raw headers the server sent back with the response
+ * @param data          the response body; may contain HTML, JSON, or binary or textual data
+ * @param history       the response of any redirects that were performed before
+ *                      arriving at the current response
+ */
 case class Response(url: String,
                     statusCode: Int,
+                    @deprecated("Value is inferred from `statusCode`", "0.9.0")
                     statusMessage: String,
                     data: geny.Bytes,
                     headers: Map[String, Seq[String]],
@@ -222,11 +226,12 @@ case class Response(url: String,
     f(new java.io.ByteArrayInputStream(data.array))
   }
   override def httpContentType: Option[String] = contentType
-  override def contentLength: Option[Long] = Some(data.array.size)
+  override def contentLength: Option[Long] = Some(data.array.length)
 }
 
 case class StreamHeaders(url: String,
                          statusCode: Int,
+                         @deprecated("Value is inferred from `statusCode`", "0.9.0")
                          statusMessage: String,
                          headers: Map[String, Seq[String]],
                          history: Option[Response]){

@@ -26,16 +26,16 @@ object Util {
       .mkString("&")
   }
 
-  private[requests] val noVerifySocketFactory = {
+  private[requests] val noVerifySSLContext = {
     // Install the all-trusting trust manager
 
     val sc = SSLContext.getInstance("SSL")
     sc.init(null, trustAllCerts, new java.security.SecureRandom())
 
-    sc.getSocketFactory
+    sc
   }
 
-  private[requests] def clientCertSocketFactory(cert: Cert, verifySslCerts: Boolean) = cert match {
+  private[requests] def clientCertSSLContext(cert: Cert, verifySslCerts: Boolean) = cert match {
     case Cert.P12(path, password) =>
 
       val pass = password.map(_.toCharArray).getOrElse(Array.emptyCharArray)
@@ -53,11 +53,11 @@ object Util {
       val trustManagers = if (verifySslCerts) null else trustAllCerts
 
       sc.init(keyManagers, trustManagers, new java.security.SecureRandom())
-      sc.getSocketFactory
+      sc
   }
 
   private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {
-    def getAcceptedIssuers() = new Array[X509Certificate](0)
+    def getAcceptedIssuers = new Array[X509Certificate](0)
 
     def checkClientTrusted(chain: Array[X509Certificate], authType: String) = {}
 
