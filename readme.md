@@ -1,4 +1,4 @@
-# Requests-Scala 0.8.2
+# Requests-Scala 0.8.3
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,7 @@ For a hands-on introduction to this library, take a look at the following blog p
 
 ## Contents
 
-- [Requests-Scala 0.8.2](#requests-scala-081)
+- [Requests-Scala 0.8.3](#requests-scala-081)
   - [Contents](#contents)
   - [Getting Started](#getting-started)
   - [Making a Request](#making-a-request)
@@ -65,9 +65,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.8.2" // mill
-"com.lihaoyi" %% "requests" % "0.8.2" // sbt
-compile "com.lihaoyi:requests_2.12:0.8.2" //gradle
+ivy"com.lihaoyi::requests:0.8.3" // mill
+"com.lihaoyi" %% "requests" % "0.8.3" // sbt
+compile "com.lihaoyi:requests_2.12:0.8.3" //gradle
 ```
 
 ## Making a Request
@@ -674,6 +674,10 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.8.3
+
+- Fix handling of HTTP 304 [159](https://github.com/com-lihaoyi/requests-scala/pull/159)
 
 ### 0.8.2
 
