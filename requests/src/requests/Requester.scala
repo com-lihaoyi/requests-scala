@@ -291,7 +291,9 @@ case class Requester(verb: String,
           }
         }
 
-        if (responseCode.toString.startsWith("3") && maxRedirects > 0){
+        if (responseCode.toString.startsWith("3") &&
+            responseCode.toString != "304" &&
+            maxRedirects > 0){
           val out = new ByteArrayOutputStream()
           Util.transferTo(connection.getInputStream, out)
           val bytes = out.toByteArray
@@ -344,7 +346,7 @@ case class Requester(verb: String,
             }
           }
 
-          if (streamHeaders.is2xx || !check) processWrappedStream(f)
+          if (streamHeaders.statusCode == 304 || streamHeaders.is2xx || !check) processWrappedStream(f)
           else {
             val errorOutput = new ByteArrayOutputStream()
             processWrappedStream(geny.Internal.transfer(_, errorOutput))

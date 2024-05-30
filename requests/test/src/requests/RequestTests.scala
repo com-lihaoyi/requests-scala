@@ -125,6 +125,10 @@ object RequestTests extends TestSuite{
       }
     }
 
+    test("test_reproduction"){
+      requests.get("http://httpbin.org/status/304").text()
+
+    }
     test("streaming"){
       val res1 = requests.get("http://httpbin.org/stream/5").text()
       assert(res1.linesIterator.length == 5)
