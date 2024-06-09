@@ -35,6 +35,10 @@ object Util {
     sc
   }
 
+  @deprecated("No longer used", "0.9.0")
+  private[requests] val noVerifySocketFactory =
+    noVerifySSLContext.getSocketFactory
+
   private[requests] def clientCertSSLContext(cert: Cert, verifySslCerts: Boolean) = cert match {
     case Cert.P12(path, password) =>
 
@@ -55,6 +59,10 @@ object Util {
       sc.init(keyManagers, trustManagers, new java.security.SecureRandom())
       sc
   }
+
+  @deprecated("No longer used", "0.9.0")
+  private[requests] def clientCertSocketFactory(cert: Cert, verifySslCerts: Boolean) =
+    clientCertSSLContext(cert, verifySslCerts).getSocketFactory
 
   private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {
     def getAcceptedIssuers = new Array[X509Certificate](0)
