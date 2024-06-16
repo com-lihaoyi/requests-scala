@@ -1,4 +1,4 @@
-# Requests-Scala 0.8.3
+# Requests-Scala 0.9.0-RC1
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -65,9 +65,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.8.3" // mill
-"com.lihaoyi" %% "requests" % "0.8.3" // sbt
-compile "com.lihaoyi:requests_2.12:0.8.3" //gradle
+ivy"com.lihaoyi::requests:0.9.0-RC1" // mill
+"com.lihaoyi" %% "requests" % "0.9.0-RC1" // sbt
+compile "com.lihaoyi:requests_2.12:0.9.0-RC1" //gradle
 ```
 
 ## Making a Request
@@ -673,9 +673,15 @@ codebase or project!
 
 ## Changelog
 
+### 0.9.0-RC1
+
+- Use JDK 11 HttpClient ([#158](https://github.com/com-lihaoyi/requests-scala/pull/158)). Note
+  that this means we are dropping compatibility with JDK 8, and will require JDK 11 and above
+  going forward. People who need to use JDK 8 can continue using version 0.8.3
+
 ### 0.8.3
 
-- Fix handling of HTTP 304 [159](https://github.com/com-lihaoyi/requests-scala/pull/159)
+- Fix handling of HTTP 304 ([#159](https://github.com/com-lihaoyi/requests-scala/pull/159))
 
 ### 0.8.2
 
