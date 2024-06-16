@@ -660,11 +660,9 @@ know.
 As it turns out, Kenneth Reitz's Requests is
 [not a lot of code](https://github.com/requests/requests/tree/main/requests).
 Most of the heavy lifting is done in other libraries, and his library is a just
-thin-shim that makes the API 10x better. It turns out on the JVM most of the
-heavy lifting is also done for you, by `java.net.HttpUrlConnection` in the
-simplest case, and other libraries like
-[AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) for more
-advanced use cases.
+thin-shim that makes the API 10x better. Similarly, it turns out on the JVM most of the
+heavy lifting is also done for you. There have always been options, but
+since JDK 11 a decent HTTP client is provided in the standard library.
 
 Given that's the case, how hard can it be to port over a dozen Python files to
 Scala? This library attempts to do that: class by class, method by method,
