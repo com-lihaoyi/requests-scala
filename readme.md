@@ -80,7 +80,7 @@ r.statusCode
 r.headers("content-type")
 // Buffer("application/json; charset=utf-8")
 
-r.text
+r.text()
 // {"login":"lihaoyi","id":934140,"node_id":"MDQ6VXNlcjkzNDE0MA==",...
 ```
 
@@ -154,11 +154,11 @@ r.headers("content-type")
 
 As seen earlier, you can use `.statusCode` and `.headers` to see the relevant
 metadata of your HTTP response. The response data is in the `.data` field of the
-`Response` object. Most often, it's text, which you can decode using the `.text`
+`Response` object. Most often, it's text, which you can decode using the `.text()`
 property as shown below:
 
 ```scala
-r.text
+r.text()
 // [{"id":"7990061484","type":"PushEvent","actor":{"id":6242317,"login":...
 ```
 
@@ -244,7 +244,7 @@ the server:
 ```scala
 val r = requests.get("https://api.github.com/events")
 
-val json = ujson.read(r.text)
+val json = ujson.read(r.text())
 
 json.arr.length
 // 30
@@ -387,7 +387,7 @@ r.cookies
 
 val r2 = requests.get("https://httpbin.org/cookies", cookies = r.cookies)
 
-r2.text
+r2.text()
 // {"cookies":{"freeform":"test"}}
 ```
 
@@ -500,7 +500,7 @@ val r = s.get("https://httpbin.org/cookies/set?freeform=test")
 
 val r2 = s.get("https://httpbin.org/cookies")
 
-r2.text
+r2.text()
 // {"cookies":{"freeform":"test"}}
 ```
 
@@ -519,12 +519,12 @@ val s = requests.Session(
 
 val r1 = s.get("https://httpbin.org/cookies")
 
-r1.text
+r1.text()
 // {"cookies":{"cookie":"vanilla"}}
 
 val r2 = s.get("https://httpbin.org/headers")
 
-r2.text
+r2.text()
 // {"headers":{"X-Special-Header":"omg", ...}}
 ```
 
@@ -558,7 +558,7 @@ val r = requests.get(
   params = Map("q" -> "http language:scala", "sort" -> "stars")
 )
 
-r.text
+r.text()
 // {"login":"lihaoyi","id":934140,"node_id":"MDQ6VXNlcjkzNDE0MA==",...
 ```
 ```scala
