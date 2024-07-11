@@ -484,7 +484,7 @@ val sslContext: SSLContext = //initialized sslContext
 
 requests.get(
   "https://client.badssl.com",
-  sslcontext = sslContext
+  sslContext = sslContext
 )
 ```
 
