@@ -307,7 +307,7 @@ object RequestTests extends TestSuite{
     // by passing a comma-separated list of headers instead
     test("duplicateHeaders"){
       val res = requests.get("https://httpbin.org/get", headers = Seq("x-y" -> "a", "x-y" -> "b"))
-      assert(ujson.read(res)("args")("headers")("X-Y") == Str("b"))
+      assert(ujson.read(res)("args")("headers")("X-Y") == Str("b")) // make sure it's not "a,b"
     }
   }
 }
