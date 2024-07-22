@@ -1,4 +1,4 @@
-# Requests-Scala 0.9.0-RC1
+# Requests-Scala 0.9.0
 
 [![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,7 @@ For a hands-on introduction to this library, take a look at the following blog p
 
 ## Contents
 
-- [Requests-Scala 0.8.3](#requests-scala-081)
+- [Requests-Scala 0.9.0](#requests-scala-081)
   - [Contents](#contents)
   - [Getting Started](#getting-started)
   - [Making a Request](#making-a-request)
@@ -45,6 +45,7 @@ For a hands-on introduction to this library, take a look at the following blog p
   - [Sessions](#sessions)
   - [Why Requests-Scala?](#why-requests-scala)
   - [Changelog](#changelog)
+    - [0.9.0](#090)
     - [0.8.0](#080)
     - [0.7.1](#071)
     - [0.7.0](#070)
@@ -65,9 +66,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.9.0-RC1" // mill
-"com.lihaoyi" %% "requests" % "0.9.0-RC1" // sbt
-compile "com.lihaoyi:requests_2.12:0.9.0-RC1" //gradle
+ivy"com.lihaoyi::requests:0.9.0" // mill
+"com.lihaoyi" %% "requests" % "0.9.0" // sbt
+compile "com.lihaoyi:requests_2.12:0.9.0" //gradle
 ```
 
 ## Making a Request
@@ -293,6 +294,14 @@ requests.get(
 )
 ```
 
+To pass in a single header multiple times, you can pass them as a comma separated list:
+
+```scala
+requests.get(
+  "https://api.github.com/some/endpoint",
+  headers = Map("user-agent" -> "my-app/0.0.1,other-app/0.0.2")
+)
+```
 
 ### Timeouts
 
@@ -673,7 +682,7 @@ codebase or project!
 
 ## Changelog
 
-### 0.9.0-RC1
+### 0.9.0
 
 - Use JDK 11 HttpClient ([#158](https://github.com/com-lihaoyi/requests-scala/pull/158)). Note
   that this means we are dropping compatibility with JDK 8, and will require JDK 11 and above
