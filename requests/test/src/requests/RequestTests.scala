@@ -301,5 +301,13 @@ object RequestTests extends TestSuite{
         }
       }
     }
+
+    // Ensure when duplicate headers are passed to requests, we only pass the last one
+    // to the server. This preserves the 0.8.x behavior, and can always be overriden
+    // by passing a comma-separated list of headers instead
+    test("duplicateHeaders"){
+      val res = requests.get("https://httpbin.org/get", headers = Seq("x-y" -> "a", "x-y" -> "b"))
+      assert(ujson.read(res)("headers")("X-Y") == Str("b")) // make sure it's not "a,b"
+    }
   }
 }
