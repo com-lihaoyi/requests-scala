@@ -78,8 +78,8 @@ case class Requester(verb: String,
     * @param data Body data to pass to this request, for POSTs and PUTs. Can be a
     *             Map[String, String] of form data, bulk data as a String or Array[Byte],
     *             or MultiPart form data.
-    * @param readTimeout How long to wait for data to be read before timing out
-    * @param connectTimeout How long to wait for a connection before timing out
+    * @param readTimeout How many milliseconds to wait for data to be read before timing out
+    * @param connectTimeout How many milliseconds to wait for a connection before timing out
     * @param proxy Host and port of a proxy you want to use
     * @param cert Client certificate configuration
     * @param sslContext Client sslContext configuration
