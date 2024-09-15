@@ -3,7 +3,7 @@ package requests
 import utest._
 import ujson._
 
-object Scala2RequestTests extends TestSuite{
+object Scala2RequestTests extends HttpbinTestSuite {
   val tests = Tests{
 
     test("params"){
@@ -11,7 +11,7 @@ object Scala2RequestTests extends TestSuite{
       test("post"){
         for(chunkedUpload <- Seq(true, false)) {
           val res1 = requests.post(
-            "https://httpbin.org/post",
+            s"http://$localHttpbin/post",
             data = Map("hello" -> "world", "foo" -> "baz"),
             chunkedUpload = chunkedUpload
           ).text()
@@ -22,7 +22,7 @@ object Scala2RequestTests extends TestSuite{
       test("put") {
         for (chunkedUpload <- Seq(true, false)) {
           val res1 = requests.put(
-            "https://httpbin.org/put",
+            s"http://$localHttpbin/put",
             data = Map("hello" -> "world", "foo" -> "baz"),
             chunkedUpload = chunkedUpload
           ).text()
@@ -31,10 +31,10 @@ object Scala2RequestTests extends TestSuite{
       }
 
       test("send"){
-        requests.send("get")("https://httpbin.org/get?hello=world&foo=baz")
+        requests.send("get")(s"http://$localHttpbin/get?hello=world&foo=baz")
 
         val res1 = requests.send("put")(
-          "https://httpbin.org/put",
+          s"http://$localHttpbin/put",
           data = Map("hello" -> "world", "foo" -> "baz"),
           chunkedUpload = true
         ).text

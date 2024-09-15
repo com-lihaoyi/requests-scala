@@ -1,24 +1,9 @@
 package requests
 
-import com.dimafeng.testcontainers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
 import utest._
 import ujson._
 
-object RequestTests extends TestSuite{
-
-  val containerDef = GenericContainer.Def(
-    "kennethreitz/httpbin",
-    exposedPorts = Seq(80),
-    waitStrategy = Wait.forHttp("/")
-  )
-  val container = containerDef.start()
-  val localHttpbinHost = container.containerIpAddress
-  val localHttpbin = s"${localHttpbinHost}:${container.mappedPort(80)}"
-
-  override def utestAfterAll(): Unit = {
-    container.stop()
-  }
+object RequestTests extends HttpbinTestSuite {
 
   val tests = Tests{
     test("matchingMethodWorks"){
