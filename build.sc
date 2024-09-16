@@ -40,7 +40,8 @@ trait RequestsModule extends CrossScalaModule with PublishModule with Mima {
   object test extends ScalaTests with TestModule.Utest {
     def ivyDeps = Agg(
       ivy"com.lihaoyi::utest::0.7.10",
-      ivy"com.lihaoyi::ujson::1.3.13"
+      ivy"com.lihaoyi::ujson::1.3.13",
+      ivy"com.dimafeng::testcontainers-scala-core:0.41.3"
     )
   }
 }
