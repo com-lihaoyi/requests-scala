@@ -222,7 +222,7 @@ object RequestTests extends HttpbinTestSuite {
     }
 
     test("clientCertificate"){
-      val base = "./requests/test/resources"
+      val base = sys.env("MILL_TEST_RESOURCE_DIR")
       val url = "https://client.badssl.com"
       val instruction = "https://github.com/lihaoyi/requests-scala/blob/master/requests/test/resources/badssl.com-client.md"
       val certificateExpiredMessage = s"WARNING: Certificate may have expired and needs to be updated. Please check: $instruction and/or file issue"
