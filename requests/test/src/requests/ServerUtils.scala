@@ -16,7 +16,8 @@ object ServerUtils {
   }
 
   private class EchoServer extends HttpHandler {
-    private val server: HttpServer = HttpServer.create(new InetSocketAddress(0), 0)
+    private val server: HttpServer =
+      HttpServer.create(new InetSocketAddress(0), 0)
     server.createContext("/echo", this)
     server.setExecutor(null); // default executor
     server.start()
@@ -43,10 +44,11 @@ object ServerUtils {
     }
   }
 
-  /** Stream uncompresser
-    * @param c
-    *   Compression mode
-    */
+  /**
+   * Stream uncompresser
+   * @param c
+   *   Compression mode
+   */
   private class Plumper(c: Compress) {
 
     private def wrap(is: InputStream): InputStream =
@@ -77,5 +79,4 @@ object ServerUtils {
       sb.toString()
     }
   }
-
 }

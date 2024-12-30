@@ -1,11 +1,13 @@
 target/
 *.iml
-.idea
+.idea/
+.vscode/
 .settings
 .classpath
 .project
 .cache
 .sbtserver
+.scala-build/
 project/.sbtserver
 tags
 nohup.out
