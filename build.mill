@@ -1,29 +1,56 @@
 package build
+
 import mill._
+import mill.scalalib._
 import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
-import scalalib._
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.0`
-import $ivy.`com.github.lolgab::mill-mima::0.0.23`
+
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.1`
+import $ivy.`com.github.lolgab::mill-mima::0.0.24`
 
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import com.github.lolgab.mill.mima._
 
 val dottyVersion = sys.props.get("dottyVersion")
+val scalaVersions = List("2.12.20", "2.13.15", "3.6.2") ++ dottyVersion
 
-val scalaVersions = List("2.12.17", "2.13.10", "2.11.12", "3.1.1") ++ dottyVersion
-
-object requests extends Cross[RequestsModule](scalaVersions)
-trait RequestsModule extends CrossScalaModule with PublishModule with Mima {
-  def publishVersion = VcsVersion.vcsState().format()
-  def mimaPreviousVersions =
-    (
-      Seq("0.7.0", "0.7.1", "0.8.2") ++
-      Option.when(VcsVersion.vcsState().commitsSinceLastTag != 0)(VcsVersion.vcsState().lastTag).flatten
-    ).distinct
+trait RequestsJvmModule extends RequestsModule with Mima {
+  def mimaPreviousArtifacts = Agg(
+      (
+        Seq("0.7.0", "0.7.1", "0.8.2")
+        ++ Option
+          .when(VcsVersion.vcsState().commitsSinceLastTag != 0)(VcsVersion.vcsState().lastTag)
+          .flatten
+      ).map(v => ivy"com.lihaoyi::requests:${v}") : _*
+    )
   override def mimaBinaryIssueFilters = Seq(
     ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send"),
     ProblemFilter.exclude[DirectMissingMethodProblem]("requests.Response.string")
   )
+}
+object requests extends Cross[RequestsJvmModule](scalaVersions) {}
+
+/**
+ * Placeholder for Scala Native module
+ */
+// object native extends Cross[RequestsNativeModule](scalaVersions)
+// trait RequestsNativeModule extends RequestsModule with ScalaNativeModule {
+//   override def scalaNativeVersion = scalaNative
+//   override def nativeEmbedResources = true
+
+//   def ivyDeps =
+//     super.ivyDeps() ++ Agg(ivy"com.github.lolgab::scala-native-crypto::0.1.0")
+//   def nativeLinkingOptions = Seq("-lmicrohttpd")
+
+//   object test extends ScalaNativeTests with RequestsTestModule {
+//     def nativeLinkingOptions =
+//       super.nativeLinkingOptions() ++ Seq("-L/usr/local/opt/openssl@3/lib")
+//   }
+// }
+
+trait RequestsModule extends CrossScalaModule
+    with PlatformScalaModule
+    with PublishModule {
+  def publishVersion = VcsVersion.vcsState().format()
 
   def pomSettings = PomSettings(
     description = "Scala port of the popular Python Requests HTTP client",
@@ -32,11 +59,11 @@ trait RequestsModule extends CrossScalaModule with PublishModule with Mima {
     licenses = Seq(License.MIT),
     versionControl = VersionControl.github("com-lihaoyi", "requests-scala"),
     developers = Seq(
-      Developer("lihaoyi", "Li Haoyi","https://github.com/lihaoyi")
+      Developer("lihaoyi", "Li Haoyi", "https://github.com/lihaoyi")
     )
   )
 
-  def ivyDeps = Agg(ivy"com.lihaoyi::geny::1.0.0")
+  def ivyDeps = Agg(ivy"com.lihaoyi::geny::1.1.1")
 
   object test extends ScalaTests with TestModule.Utest {
     def ivyDeps = Agg(
