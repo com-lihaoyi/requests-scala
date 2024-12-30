@@ -1,7 +1,8 @@
 package build
 
 import mill._
-import mill.scalalib._
+import scalalib._
+import scalanativelib._
 import mill.scalalib.publish.{Developer, License, PomSettings, VersionControl}
 
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.4.1`
