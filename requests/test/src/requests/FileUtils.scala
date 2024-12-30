@@ -9,7 +9,7 @@ object FileUtils {
 
   def createSslContext(
       keyStorePath: String,
-      keyStorePassword: String
+      keyStorePassword: String,
   ): SSLContext = {
     val stream: InputStream = new FileInputStream(keyStorePath)
     val sslContext = SSLContext.getInstance("TLS")

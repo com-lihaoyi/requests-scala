@@ -20,15 +20,11 @@ trait Compress {
 }
 object Compress {
   object Gzip extends Compress {
-    def headers = Seq(
-      "Content-Encoding" -> "gzip"
-    )
+    def headers = Seq("Content-Encoding" -> "gzip")
     def wrap(x: OutputStream) = new GZIPOutputStream(x)
   }
   object Deflate extends Compress {
-    def headers = Seq(
-      "Content-Encoding" -> "deflate"
-    )
+    def headers = Seq("Content-Encoding" -> "deflate")
     def wrap(x: OutputStream) = new DeflaterOutputStream(x)
   }
   object None extends Compress {
@@ -59,7 +55,7 @@ case class Request(
     autoDecompress: Boolean = true,
     compress: Compress = Compress.None,
     keepAlive: Boolean = true,
-    check: Boolean = true
+    check: Boolean = true,
 )
 
 /**
@@ -90,15 +86,14 @@ object RequestBlob {
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob {
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream",
-      "Content-Length" -> x.length().toString
+      "Content-Length" -> x.length().toString,
     )
-    def write(out: java.io.OutputStream) =
-      Util.transferTo(new FileInputStream(x), out)
+    def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
   implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob {
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream",
-      "Content-Length" -> java.nio.file.Files.size(x).toString
+      "Content-Length" -> java.nio.file.Files.size(x).toString,
     )
     def write(out: java.io.OutputStream) =
       Util.transferTo(java.nio.file.Files.newInputStream(x), out)
@@ -107,7 +102,7 @@ object RequestBlob {
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends RequestBlob {
     val serialized = Util.urlEncode(x).getBytes
     override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/x-www-form-urlencoded"
+      "Content-Type" -> "application/x-www-form-urlencoded",
     )
     def write(out: java.io.OutputStream) = {
       out.write(serialized)
@@ -128,30 +123,30 @@ object RequestBlob {
       (
         p.name.getBytes(),
         if (p.filename == null) Array[Byte]() else p.filename.getBytes(),
-        p
-      )
+        p,
+      ),
     )
 
-    override def headers = Seq(
-      "Content-Type" -> s"multipart/form-data; boundary=$boundary"
-    )
+    override def headers = Seq("Content-Type" -> s"multipart/form-data; boundary=$boundary")
     def write(out: java.io.OutputStream) = {
       def writeBytes(s: String): Unit = out.write(s.getBytes())
 
-      partBytes.foreach { case (name, filename, part) =>
-        writeBytes(pref + boundary + crlf)
-        part.data.headers.foreach { case (headerName, headerValue) =>
-          writeBytes(s"$headerName: $headerValue$crlf")
-        }
-        writeBytes(ContentDisposition)
-        out.write(name)
-        if (filename.nonEmpty) {
-          writeBytes(filenameSnippet)
-          out.write(filename)
-        }
-        writeBytes("\"" + crlf + crlf)
-        part.data.write(out)
-        writeBytes(crlf)
+      partBytes.foreach {
+        case (name, filename, part) =>
+          writeBytes(pref + boundary + crlf)
+          part.data.headers.foreach {
+            case (headerName, headerValue) =>
+              writeBytes(s"$headerName: $headerValue$crlf")
+          }
+          writeBytes(ContentDisposition)
+          out.write(name)
+          if (filename.nonEmpty) {
+            writeBytes(filenameSnippet)
+            out.write(filename)
+          }
+          writeBytes("\"" + crlf + crlf)
+          part.data.write(out)
+          writeBytes(crlf)
       }
 
       writeBytes(pref + boundary + pref + crlf)
@@ -204,7 +199,7 @@ case class Response(
     statusMessage: String,
     data: geny.Bytes,
     headers: Map[String, Seq[String]],
-    history: Option[Response]
+    history: Option[Response],
 ) extends geny.ByteData
     with geny.Readable {
 
@@ -247,7 +242,7 @@ case class StreamHeaders(
     @deprecated("Value is inferred from `statusCode`", "0.9.0")
     statusMessage: String,
     headers: Map[String, Seq[String]],
-    history: Option[Response]
+    history: Option[Response],
 ) {
   def is2xx = statusCode.toString.charAt(0) == '2'
   def is3xx = statusCode.toString.charAt(0) == '3'
@@ -270,14 +265,13 @@ object RequestAuth {
   implicit def implicitBasic(x: (String, String)): Basic = new Basic(x._1, x._2)
   class Basic(username: String, password: String) extends RequestAuth {
     def header = Some(
-      "Basic " + java.util.Base64.getEncoder
-        .encodeToString((username + ":" + password).getBytes())
+      "Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()),
     )
   }
   case class Proxy(username: String, password: String) extends RequestAuth {
     def header = Some(
       "Proxy-Authorization " + java.util.Base64.getEncoder
-        .encodeToString((username + ":" + password).getBytes())
+        .encodeToString((username + ":" + password).getBytes()),
     )
   }
   case class Bearer(token: String) extends RequestAuth {

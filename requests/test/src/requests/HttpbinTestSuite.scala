@@ -8,7 +8,7 @@ abstract class HttpbinTestSuite extends TestSuite {
   private val containerDef = GenericContainer.Def(
     "kennethreitz/httpbin",
     exposedPorts = Seq(80),
-    waitStrategy = Wait.forHttp("/")
+    waitStrategy = Wait.forHttp("/"),
   )
   private val container = containerDef.start()
 

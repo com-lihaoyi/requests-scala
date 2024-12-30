@@ -7,12 +7,7 @@ object RequestTests extends HttpbinTestSuite {
 
   val tests = Tests {
     test("matchingMethodWorks") {
-      val requesters = Seq(
-        requests.delete,
-        requests.get,
-        requests.post,
-        requests.put
-      )
+      val requesters = Seq(requests.delete, requests.get, requests.post, requests.put)
 
       for (baseUrl <- Seq(s"http://$localHttpbin", "https://httpbin.org")) {
         for (r <- requesters) {
@@ -43,7 +38,7 @@ object RequestTests extends HttpbinTestSuite {
         // All in params
         val res2 = requests.get(
           s"http://$localHttpbin/get",
-          params = Map("hello" -> "world", "foo" -> "baz")
+          params = Map("hello" -> "world", "foo" -> "baz"),
         )
         assert(read(res2).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
 
@@ -51,7 +46,7 @@ object RequestTests extends HttpbinTestSuite {
         val res3 = requests
           .get(
             s"http://$localHttpbin/get?hello=world",
-            params = Map("foo" -> "baz")
+            params = Map("foo" -> "baz"),
           )
           .text()
         assert(read(res3).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
@@ -59,7 +54,7 @@ object RequestTests extends HttpbinTestSuite {
         // Needs escaping
         val res4 = requests.get(
           s"http://$localHttpbin/get?hello=world",
-          params = Map("++-- lol" -> " !@#$%")
+          params = Map("++-- lol" -> " !@#$%"),
         )
         assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
       }
@@ -72,9 +67,9 @@ object RequestTests extends HttpbinTestSuite {
             s"http://$localHttpbin/post",
             data = MultiPart(
               MultiItem("file1", "Hello!".getBytes, "foo.txt"),
-              MultiItem("file2", "Goodbye!")
+              MultiItem("file2", "Goodbye!"),
             ),
-            chunkedUpload = chunkedUpload
+            chunkedUpload = chunkedUpload,
           )
           .text()
 
@@ -105,7 +100,9 @@ object RequestTests extends HttpbinTestSuite {
         assert(read(res1) == Obj("cookies" -> Obj("hello" -> "hello, world")))
         s.get(s"http://$localHttpbin/cookies/set?freeform=test+test")
         val res2 = s.get(s"http://$localHttpbin/cookies").text().trim
-        assert(read(res2) == Obj("cookies" -> Obj("freeform" -> "test test", "hello" -> "hello, world")))
+        assert(
+          read(res2) == Obj("cookies" -> Obj("freeform" -> "test test", "hello" -> "hello, world")),
+        )
       }
     }
 
@@ -115,15 +112,9 @@ object RequestTests extends HttpbinTestSuite {
         assert(res1.statusCode == 200)
         val res2 = requests.get(s"http://$localHttpbin/absolute-redirect/5")
         assert(res2.statusCode == 200)
-        val res3 = requests.get(
-          s"http://$localHttpbin/absolute-redirect/6",
-          check = false
-        )
+        val res3 = requests.get(s"http://$localHttpbin/absolute-redirect/6", check = false)
         assert(res3.statusCode == 302)
-        val res4 = requests.get(
-          s"http://$localHttpbin/absolute-redirect/6",
-          maxRedirects = 10
-        )
+        val res4 = requests.get(s"http://$localHttpbin/absolute-redirect/6", maxRedirects = 10)
         assert(res4.statusCode == 200)
       }
       test("maxRelative") {
@@ -131,23 +122,17 @@ object RequestTests extends HttpbinTestSuite {
         assert(res1.statusCode == 200)
         val res2 = requests.get(s"http://$localHttpbin/relative-redirect/5")
         assert(res2.statusCode == 200)
-        val res3 = requests.get(
-          s"http://$localHttpbin/relative-redirect/6",
-          check = false
-        )
+        val res3 = requests.get(s"http://$localHttpbin/relative-redirect/6", check = false)
         assert(res3.statusCode == 302)
-        val res4 = requests.get(
-          s"http://$localHttpbin/relative-redirect/6",
-          maxRedirects = 10
-        )
+        val res4 = requests.get(s"http://$localHttpbin/relative-redirect/6", maxRedirects = 10)
         assert(res4.statusCode == 200)
       }
     }
 
     test("test_reproduction") {
       requests.get(s"http://$localHttpbin/status/304").text()
-
     }
+
     test("streaming") {
       val res1 = requests.get(s"http://$localHttpbin/stream/5").text()
       assert(res1.linesIterator.length == 5)
@@ -193,19 +178,17 @@ object RequestTests extends HttpbinTestSuite {
       val res2 = requests.get(s"http://$localHttpbin/deflate")
       assert(read(res2).obj("headers").obj("Host").str == localHttpbin)
 
-      val res3 =
-        requests.get(s"http://$localHttpbin/gzip", autoDecompress = false)
+      val res3 = requests.get(s"http://$localHttpbin/gzip", autoDecompress = false)
       assert(res3.bytes.length < res1.bytes.length)
 
-      val res4 =
-        requests.get(s"http://$localHttpbin/deflate", autoDecompress = false)
+      val res4 = requests.get(s"http://$localHttpbin/deflate", autoDecompress = false)
       assert(res4.bytes.length < res2.bytes.length)
 
       (
         res1.bytes.length,
         res2.bytes.length,
         res3.bytes.length,
-        res4.bytes.length
+        res4.bytes.length,
       )
     }
 
@@ -213,23 +196,30 @@ object RequestTests extends HttpbinTestSuite {
       val res1 = requests.post(
         s"http://$localHttpbin/post",
         compress = requests.Compress.None,
-        data = new RequestBlob.ByteSourceRequestBlob("Hello World")
+        data = new RequestBlob.ByteSourceRequestBlob("Hello World"),
       )
       assert(res1.text().contains(""""Hello World""""))
 
       val res2 = requests.post(
         s"http://$localHttpbin/post",
         compress = requests.Compress.Gzip,
-        data = new RequestBlob.ByteSourceRequestBlob("I am cow")
+        data = new RequestBlob.ByteSourceRequestBlob("I am cow"),
       )
-      assert(read(new String(res2.bytes))("data").toString.contains("data:application/octet-stream;base64,H4sIAAAAAA"))
+      assert(
+        read(new String(res2.bytes))("data").toString
+          .contains("data:application/octet-stream;base64,H4sIAAAAAA"),
+      )
 
       val res3 = requests.post(
         s"http://$localHttpbin/post",
         compress = requests.Compress.Deflate,
-        data = new RequestBlob.ByteSourceRequestBlob("Hear me moo")
+        data = new RequestBlob.ByteSourceRequestBlob("Hear me moo"),
       )
-      assert(read(new String(res3.bytes))("data").toString == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""")
+      assert(
+        read(new String(res3.bytes))(
+          "data",
+        ).toString == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""",
+      )
     }
 
     test("headers") {
@@ -256,7 +246,7 @@ object RequestTests extends HttpbinTestSuite {
         val res = requests.get(
           url,
           cert = Cert.implicitP12(s"$base/badssl.com-client.p12", "badssl.com"),
-          check = false
+          check = false,
         )
         if (res.statusCode == 400)
           println(certificateExpiredMessage)
@@ -267,7 +257,7 @@ object RequestTests extends HttpbinTestSuite {
         val res = requests.get(
           "https://client.badssl.com",
           cert = Cert.implicitP12(s"$base/badssl.com-client-nopass.p12"),
-          check = false
+          check = false,
         )
         if (res.statusCode == 400)
           println(certificateExpiredMessage)
@@ -277,9 +267,8 @@ object RequestTests extends HttpbinTestSuite {
       test("sslContext") {
         val res = requests.get(
           "https://client.badssl.com",
-          sslContext = FileUtils
-            .createSslContext(s"$base/badssl.com-client.p12", "badssl.com"),
-          check = false
+          sslContext = FileUtils.createSslContext(s"$base/badssl.com-client.p12", "badssl.com"),
+          check = false,
         )
         if (res.statusCode == 400)
           println(certificateExpiredMessage)
@@ -287,10 +276,7 @@ object RequestTests extends HttpbinTestSuite {
           assert(res.statusCode == 200)
       }
       test("noCert") {
-        val res = requests.get(
-          "https://client.badssl.com",
-          check = false
-        )
+        val res = requests.get("https://client.badssl.com", check = false)
         assert(res.statusCode == 400)
       }
     }
@@ -324,7 +310,7 @@ object RequestTests extends HttpbinTestSuite {
             requests.post(
               s"http://localhost:$port/echo",
               compress = c,
-              data = new RequestBlob.ByteSourceRequestBlob(str)
+              data = new RequestBlob.ByteSourceRequestBlob(str),
             )
           assert(str == response.data.toString)
         }
@@ -337,7 +323,7 @@ object RequestTests extends HttpbinTestSuite {
     test("duplicateHeaders") {
       val res = requests.get(
         s"http://$localHttpbin/get",
-        headers = Seq("x-y" -> "a", "x-y" -> "b")
+        headers = Seq("x-y" -> "a", "x-y" -> "b"),
       )
       // make sure it's not "a,b"
       assert(ujson.read(res)("headers")("X-Y") == Str("b"))

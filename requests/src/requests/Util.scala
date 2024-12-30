@@ -10,7 +10,7 @@ object Util {
   def transferTo(
       is: InputStream,
       os: OutputStream,
-      bufferSize: Int = 8 * 1024
+      bufferSize: Int = 8 * 1024,
   ) = {
     val buffer = new Array[Byte](bufferSize)
     while ({
@@ -24,8 +24,8 @@ object Util {
   }
 
   def urlEncode(x: Iterable[(String, String)]) = {
-    x.map { case (k, v) =>
-      URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")
+    x.map {
+      case (k, v) => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")
     }.mkString("&")
   }
 
@@ -44,7 +44,7 @@ object Util {
 
   private[requests] def clientCertSSLContext(
       cert: Cert,
-      verifySslCerts: Boolean
+      verifySslCerts: Boolean,
   ) = cert match {
     case Cert.P12(path, password) =>
       val pass = password.map(_.toCharArray).getOrElse(Array.emptyCharArray)
@@ -68,7 +68,7 @@ object Util {
   @deprecated("No longer used", "0.9.0")
   private[requests] def clientCertSocketFactory(
       cert: Cert,
-      verifySslCerts: Boolean
+      verifySslCerts: Boolean,
   ) = clientCertSSLContext(cert, verifySslCerts).getSocketFactory
 
   private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {

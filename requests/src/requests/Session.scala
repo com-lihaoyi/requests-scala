@@ -44,7 +44,7 @@ case class Session(
     autoDecompress: Boolean = true,
     compress: Compress = Compress.None,
     chunkedUpload: Boolean = false,
-    check: Boolean = true
+    check: Boolean = true,
 ) extends BaseSession {
   for ((k, v) <- cookieValues) cookies(k) = new HttpCookie(k, v)
 }

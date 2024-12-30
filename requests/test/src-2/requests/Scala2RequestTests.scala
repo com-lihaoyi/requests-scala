@@ -5,21 +5,17 @@ import ujson._
 
 object Scala2RequestTests extends HttpbinTestSuite {
   val tests = Tests {
-
     test("params") {
-
       test("post") {
         for (chunkedUpload <- Seq(true, false)) {
           val res1 = requests
             .post(
               s"http://$localHttpbin/post",
               data = Map("hello" -> "world", "foo" -> "baz"),
-              chunkedUpload = chunkedUpload
+              chunkedUpload = chunkedUpload,
             )
             .text()
-          assert(
-            read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world")
-          )
+          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
 
@@ -29,12 +25,10 @@ object Scala2RequestTests extends HttpbinTestSuite {
             .put(
               s"http://$localHttpbin/put",
               data = Map("hello" -> "world", "foo" -> "baz"),
-              chunkedUpload = chunkedUpload
+              chunkedUpload = chunkedUpload,
             )
             .text()
-          assert(
-            read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world")
-          )
+          assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
         }
       }
 
@@ -45,13 +39,11 @@ object Scala2RequestTests extends HttpbinTestSuite {
           .send("put")(
             s"http://$localHttpbin/put",
             data = Map("hello" -> "world", "foo" -> "baz"),
-            chunkedUpload = true
+            chunkedUpload = true,
           )
           .text
 
-        assert(
-          read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world")
-        )
+        assert(read(res1).obj("form") == Obj("foo" -> "baz", "hello" -> "world"))
       }
     }
   }
