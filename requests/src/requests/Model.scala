@@ -83,6 +83,7 @@ object RequestBlob {
         s.contentLength.map("Content-Length" -> _.toString)
     def write(out: java.io.OutputStream) = s.writeBytesTo(out)
   }
+
   implicit class FileRequestBlob(x: java.io.File) extends RequestBlob {
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream",
@@ -90,6 +91,7 @@ object RequestBlob {
     )
     def write(out: java.io.OutputStream) = Util.transferTo(new FileInputStream(x), out)
   }
+
   implicit class NioFileRequestBlob(x: java.nio.file.Path) extends RequestBlob {
     override def headers = super.headers ++ Seq(
       "Content-Type" -> "application/octet-stream",
@@ -101,9 +103,8 @@ object RequestBlob {
 
   implicit class FormEncodedRequestBlob(val x: Iterable[(String, String)]) extends RequestBlob {
     val serialized = Util.urlEncode(x).getBytes
-    override def headers = super.headers ++ Seq(
-      "Content-Type" -> "application/x-www-form-urlencoded",
-    )
+    override def headers =
+      super.headers ++ Seq("Content-Type" -> "application/x-www-form-urlencoded")
     def write(out: java.io.OutputStream) = {
       out.write(serialized)
     }
@@ -262,7 +263,9 @@ object RequestAuth {
   object Empty extends RequestAuth {
     def header = None
   }
+
   implicit def implicitBasic(x: (String, String)): Basic = new Basic(x._1, x._2)
+
   class Basic(username: String, password: String) extends RequestAuth {
     def header = Some(
       "Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes()),
