@@ -16,10 +16,7 @@ val scalaVersions = List("2.12.20", "2.13.15", "3.3.4") ++ dottyVersion
 trait RequestsJvmModule extends RequestsModule with Mima {
   def mimaPreviousArtifacts = Agg(
       (
-        Seq("0.7.0", "0.7.1", "0.8.2")
-        ++ Option
-          .when(VcsVersion.vcsState().commitsSinceLastTag != 0)(VcsVersion.vcsState().lastTag)
-          .flatten
+        Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0")
       ).map(v => ivy"com.lihaoyi::requests:${v}") : _*
     )
   override def mimaBinaryIssueFilters = Seq(
