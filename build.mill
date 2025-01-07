@@ -12,41 +12,22 @@ import com.github.lolgab.mill.mima._
 
 val scalaNextVersion = sys.props.get("scalaNextVersion")
 val scalaVersions = List("2.12.20", "2.13.15", "3.3.4") ++ scalaNextVersion
+val scalaNativeVer = "0.5.6"
 
-trait RequestsJvmModule extends RequestsModule with Mima {
-  def mimaPreviousArtifacts = Agg(
-      (
-        Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0")
-      ).map(v => ivy"com.lihaoyi::requests:${v}") : _*
-    )
+trait MimaCheck extends Mima {
+   def mimaPreviousVersions = (
+      Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0")
+    ).distinct
+
   override def mimaBinaryIssueFilters = Seq(
     ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send"),
-    ProblemFilter.exclude[DirectMissingMethodProblem]("requests.Response.string")
+    ProblemFilter.exclude[DirectMissingMethodProblem]("requests.Response.string"),
   )
 }
-object requests extends Cross[RequestsJvmModule](scalaVersions) {}
 
-/**
- * Placeholder for Scala Native module
- */
-// object native extends Cross[RequestsNativeModule](scalaVersions)
-// trait RequestsNativeModule extends RequestsModule with ScalaNativeModule {
-//   override def scalaNativeVersion = scalaNative
-//   override def nativeEmbedResources = true
+trait RequestsPublishModule extends PublishModule with MimaCheck {
+  def artifactName = "requests"
 
-//   def ivyDeps =
-//     super.ivyDeps() ++ Agg(ivy"com.github.lolgab::scala-native-crypto::0.1.0")
-//   def nativeLinkingOptions = Seq("-lmicrohttpd")
-
-//   object test extends ScalaNativeTests with RequestsTestModule {
-//     def nativeLinkingOptions =
-//       super.nativeLinkingOptions() ++ Seq("-L/usr/local/opt/openssl@3/lib")
-//   }
-// }
-
-trait RequestsModule extends CrossScalaModule
-    with PlatformScalaModule
-    with PublishModule {
   def publishVersion = VcsVersion.vcsState().format()
 
   def pomSettings = PomSettings(
@@ -61,12 +42,34 @@ trait RequestsModule extends CrossScalaModule
   )
 
   def ivyDeps = Agg(ivy"com.lihaoyi::geny::1.1.1")
+}
 
-  object test extends ScalaTests with TestModule.Utest {
-    def ivyDeps = Agg(
-      ivy"com.lihaoyi::utest::0.7.10",
-      ivy"com.lihaoyi::ujson::1.3.13",
-      ivy"com.dimafeng::testcontainers-scala-core:0.41.3"
-    )
+trait RequestsCrossScalaModule extends CrossScalaModule with ScalaModule {
+  def millSourcePath = build.millSourcePath / "requests"
+  def sources = T.sources(millSourcePath / "src")
+}
+
+trait RequestsTestModule extends TestModule.Utest {
+  def ivyDeps = Agg(
+    ivy"com.lihaoyi::utest::0.7.10",
+    ivy"com.lihaoyi::ujson::1.3.13",
+    ivy"com.dimafeng::testcontainers-scala-core:0.41.3"
+  )
+}
+
+object requests extends Module {
+  trait RequestsJvmModule extends RequestsCrossScalaModule with RequestsPublishModule {
+    object test extends ScalaTests with RequestsTestModule
   }
+  object jvm extends Cross[RequestsJvmModule](scalaVersions)
+
+  // trait RequestsNativeModule extends ScalaNativeModule with RequestsPublishModule {
+  //   override def scalaNativeVersion = scalaNativeVer
+
+  //   def ivyDeps =
+  //     super.ivyDeps() ++ Agg(ivy"com.github.lolgab::scala-native-crypto::0.1.0")
+
+  //   object test extends ScalaNativeTests with RequestsTestModule
+  // }
+  // object native extends Cross[RequestsNativeModule](scalaVersions)
 }
