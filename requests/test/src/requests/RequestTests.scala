@@ -271,7 +271,7 @@ object RequestTests extends HttpbinTestSuite {
     test("selfSignedCertificate"){
       val res = requests.get(
         "https://self-signed.badssl.com",
-        verifySslCerts = false
+        verifySslCerts = false,
       )
       assert(res.statusCode == 200)
     }
