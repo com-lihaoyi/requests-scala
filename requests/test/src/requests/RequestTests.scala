@@ -272,9 +272,8 @@ object RequestTests extends HttpbinTestSuite {
       val res = requests.get(
         "https://self-signed.badssl.com",
         verifySslCerts = false,
-        check = false,
       )
-      assert(res.statusCode == 404)
+      assert(res.statusCode == 200)
     }
 
     test("gzipError"){
