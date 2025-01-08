@@ -7,11 +7,13 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManager, X509TrustManager}
 
 object Util {
-  def transferTo(is: InputStream,
-                 os: OutputStream,
-                 bufferSize: Int = 8 * 1024) = {
+  def transferTo(
+      is: InputStream,
+      os: OutputStream,
+      bufferSize: Int = 8 * 1024,
+  ) = {
     val buffer = new Array[Byte](bufferSize)
-    while ( {
+    while ({
       is.read(buffer) match {
         case -1 => false
         case n =>
@@ -22,8 +24,9 @@ object Util {
   }
 
   def urlEncode(x: Iterable[(String, String)]) = {
-    x.map{case (k, v) => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")}
-      .mkString("&")
+    x.map {
+      case (k, v) => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")
+    }.mkString("&")
   }
 
   private[requests] val noVerifySSLContext = {
@@ -39,9 +42,11 @@ object Util {
   private[requests] val noVerifySocketFactory =
     noVerifySSLContext.getSocketFactory
 
-  private[requests] def clientCertSSLContext(cert: Cert, verifySslCerts: Boolean) = cert match {
+  private[requests] def clientCertSSLContext(
+      cert: Cert,
+      verifySslCerts: Boolean,
+  ) = cert match {
     case Cert.P12(path, password) =>
-
       val pass = password.map(_.toCharArray).getOrElse(Array.emptyCharArray)
 
       val keyManagers = {
@@ -61,8 +66,10 @@ object Util {
   }
 
   @deprecated("No longer used", "0.9.0")
-  private[requests] def clientCertSocketFactory(cert: Cert, verifySslCerts: Boolean) =
-    clientCertSSLContext(cert, verifySslCerts).getSocketFactory
+  private[requests] def clientCertSocketFactory(
+      cert: Cert,
+      verifySslCerts: Boolean,
+  ) = clientCertSSLContext(cert, verifySslCerts).getSocketFactory
 
   private lazy val trustAllCerts = Array[TrustManager](new X509TrustManager() {
     def getAcceptedIssuers = new Array[X509Certificate](0)

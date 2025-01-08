@@ -90,6 +90,6 @@ object StatusMessages {
     527 -> "Railgun Error",
     530 -> "Site is Frozen",
     598 -> "Network Read Timeout Error",
-    599 -> "Network Connect Timeout Error"
+    599 -> "Network Connect Timeout Error",
   )
 }

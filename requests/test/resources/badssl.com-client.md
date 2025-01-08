@@ -31,4 +31,6 @@ And then answer `<enter> <enter>` for no password.
 
 Remove temporary files.
 
-```rm badssl.com.ca-cert.ca badssl.com.crt badssl.com.private.key badssl.com.private-nopass.key temp.pem```
+```
+rm badssl.com.ca-cert.ca badssl.com.crt badssl.com.private.key badssl.com.private-nopass.key temp.pem
+```
