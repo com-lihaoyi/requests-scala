@@ -51,7 +51,7 @@ jobs:
     env:
       SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
       SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
-      SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+      SONATYPE_USER: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       LANG: 'en_US.UTF-8'
       LC_MESSAGES: 'en_US.UTF-8'
@@ -65,17 +65,7 @@ jobs:
       - name: Publish to Maven Central
         run: |
           if [[ $(git tag --points-at HEAD) != '' ]]; then
-            echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
-            gpg --import --no-tty --batch --yes gpg_key
-            rm gpg_key
-            ./mill -i mill.scalalib.PublishModule/publishAll \
-              --sonatypeCreds $SONATYPE_USER:$SONATYPE_PASSWORD \
-              --gpgArgs --passphrase=$SONATYPE_PGP_PRIVATE_KEY_PASSWORD,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b \
-              --publishArtifacts __.publishArtifacts \
-              --readTimeout 600000 \
-              --awaitTimeout 600000 \
-              --release true \
-              --signed true
+            ./mill -i mill.scalalib.PublishModule/
           fi
       - name: Create GitHub Release
         id: create_gh_release
