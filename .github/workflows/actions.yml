@@ -49,24 +49,22 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     env:
-      SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
-      SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
-      SONATYPE_USER: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      LANG: 'en_US.UTF-8'
-      LC_MESSAGES: 'en_US.UTF-8'
-      LC_ALL: 'en_US.UTF-8'
+      MILL_SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      MILL_SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      MILL_PGP_SECRET_BASE64: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
+      MILL_PGP_PASSPHRASE: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+      LANG: "en_US.UTF-8"
+      LC_MESSAGES: "en_US.UTF-8"
+      LC_ALL: "en_US.UTF-8"
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: 11
       - name: Publish to Maven Central
-        run: |
-          if [[ $(git tag --points-at HEAD) != '' ]]; then
-            ./mill -i mill.scalalib.PublishModule/
-          fi
+        run: ./mill -i mill.scalalib.PublishModule/
       - name: Create GitHub Release
         id: create_gh_release
         # WARN: `actions/create-release` is currently unmaintained. It just works now, keep it until it breaks.
