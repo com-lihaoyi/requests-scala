@@ -36,7 +36,7 @@ object Compress {
 /**
  * The equivalent of configuring a [[Requester.apply]] or [[Requester.stream]] call, but without
  * invoking it. Useful if you want to further customize it and make the call later via the overloads
- * of `apply`/`stream` that take a [[Request]].
+ * of `apply` /`stream` that take a [[Request]].
  */
 case class Request(
     url: String,

@@ -75,7 +75,7 @@ case class Requester(verb: String, sess: BaseSession) {
    * @param auth
    *   HTTP authentication you want to use with this request; defaults to none
    * @param params
-   *   URL params to pass to this request, for `GET`s and `DELETE`s
+   *   URL params to pass to this request, for `GET` s and `DELETE` s
    * @param headers
    *   Custom headers to use, in addition to the defaults
    * @param data
