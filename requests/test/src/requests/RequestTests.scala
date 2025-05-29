@@ -18,10 +18,11 @@ object RequestTests extends HttpbinTestSuite {
           if (r.verb == r2.verb) {
             val res = r(s"$baseUrl/${r2.verb.toLowerCase()}")
             assert(res.statusCode == 200)
-          } else
+          } else {
             intercept[RequestFailedException] {
               r(s"$baseUrl/${r2.verb.toLowerCase()}")
             }
+          }
         }
       }
     }
