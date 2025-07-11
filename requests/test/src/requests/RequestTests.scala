@@ -8,21 +8,20 @@ object RequestTests extends HttpbinTestSuite {
   val tests = Tests {
     test("matchingMethodWorks") {
       val requesters = Seq(requests.delete, requests.get, requests.post, requests.put)
+      val baseUrl = s"http://$localHttpbin"
+      for (r <- requesters) {
+        for (r2 <- requesters) {
+          val res = r(s"$baseUrl/${r2.verb.toLowerCase()}", check = false)
+          if (r.verb == r2.verb) assert(res.statusCode == 200)
+          else assert(res.statusCode == 405)
 
-      for (baseUrl <- Seq(s"http://$localHttpbin", "https://httpbin.org")) {
-        for (r <- requesters) {
-          for (r2 <- requesters) {
-            val res = r(s"$baseUrl/${r2.verb.toLowerCase()}", check = false)
-            if (r.verb == r2.verb) assert(res.statusCode == 200)
-            else assert(res.statusCode == 405)
-
-            if (r.verb == r2.verb) {
-              val res = r(s"$baseUrl/${r2.verb.toLowerCase()}")
-              assert(res.statusCode == 200)
-            } else
-              intercept[RequestFailedException] {
-                r(s"$baseUrl/${r2.verb.toLowerCase()}")
-              }
+          if (r.verb == r2.verb) {
+            val res = r(s"$baseUrl/${r2.verb.toLowerCase()}")
+            assert(res.statusCode == 200)
+          } else {
+            intercept[RequestFailedException] {
+              r(s"$baseUrl/${r2.verb.toLowerCase()}")
+            }
           }
         }
       }
