@@ -1,7 +1,5 @@
 # Requests-Scala 0.9.0
 
-[![Join the chat at https://gitter.im/lihaoyi/requests-scala](https://badges.gitter.im/lihaoyi/requests-scala.svg)](https://gitter.im/lihaoyi/requests-scala?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 Requests-Scala is a Scala port of the popular Python
 [Requests](http://docs.python-requests.org/) HTTP client. Requests-Scala aims to
 provide the same API and user-experience as the original Requests: flexible,
