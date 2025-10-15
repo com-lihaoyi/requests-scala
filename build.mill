@@ -1,4 +1,4 @@
-//| mill-version: 1.0.0
+//| mill-version: 1.0.6
 //| mvnDeps:
 //| - com.github.lolgab::mill-mima_mill1:0.2.0
 package build
