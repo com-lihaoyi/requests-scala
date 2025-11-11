@@ -67,6 +67,7 @@ Use the following import to get you started:
 ivy"com.lihaoyi::requests:0.9.0" // mill
 "com.lihaoyi" %% "requests" % "0.9.0" // sbt
 compile "com.lihaoyi:requests_2.12:0.9.0" //gradle
+//> using dep "com.lihaoyi::requests:0.9.0"  // scala-cli
 ```
 
 ## Making a Request
