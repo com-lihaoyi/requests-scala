@@ -5,7 +5,7 @@ import java.net.http._
 import java.net.{UnknownHostException => _, _}
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.concurrent.Flow
+import java.util.concurrent.{ExecutorService, Executors, Flow, ThreadFactory, TimeUnit}
 import java.util.function.Supplier
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
@@ -211,9 +211,11 @@ case class Requester(verb: String, sess: BaseSession) {
         new java.net.URL(url + firstSep + encodedParams)
       } else url0
 
+      val executor: ExecutorService = Executors.newSingleThreadExecutor()
       val httpClient: HttpClient =
         HttpClient
           .newBuilder()
+          .executor(executor)
           .followRedirects(HttpClient.Redirect.NEVER)
           .proxy(proxy match {
             case null       => ProxySelector.getDefault
@@ -231,6 +233,7 @@ case class Requester(verb: String, sess: BaseSession) {
           )
           .connectTimeout(Duration.ofMillis(connectTimeout))
           .build()
+      try {
 
       val sessionCookieValues = for {
         c <- (sess.cookies ++ cookies).valuesIterator
@@ -434,6 +437,16 @@ case class Requester(verb: String, sess: BaseSession) {
             ),
           )
         }
+      }
+      } finally {
+        // Try to close HttpClient if close() method exists (Java 21+)
+        try {
+          val closeMethod = classOf[HttpClient].getMethod("close")
+          closeMethod.invoke(httpClient)
+        } catch {
+          case _: NoSuchMethodException => // Java < 21, no close method
+        }
+        executor.shutdown()
       }
     }
   }

@@ -60,7 +60,9 @@ trait RequestsTestModule extends TestModule.Utest {
 
 object requests extends Module {
   trait RequestsJvmModule extends RequestsCrossScalaModule with RequestsPublishModule {
-    object test extends ScalaTests with RequestsTestModule
+    object test extends ScalaTests with RequestsTestModule {
+      def jvmId = "21"
+    }
   }
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
 
