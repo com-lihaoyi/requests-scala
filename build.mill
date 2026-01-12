@@ -54,7 +54,7 @@ trait RequestsTestModule extends TestModule.Utest {
   def mvnDeps = Seq(
     mvn"com.lihaoyi::utest::0.7.10",
     mvn"com.lihaoyi::ujson::1.3.13",
-    mvn"com.dimafeng::testcontainers-scala-core:0.41.3"
+    mvn"com.dimafeng::testcontainers-scala-core:0.43.0"
   )
   def forkArgs = Seq(
     "--add-opens", "java.net.http/jdk.internal.net.http=ALL-UNNAMED"
