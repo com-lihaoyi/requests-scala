@@ -1,4 +1,4 @@
-# Requests-Scala 0.9.0
+# Requests-Scala 0.9.1
 
 Requests-Scala is a Scala port of the popular Python
 [Requests](http://docs.python-requests.org/) HTTP client. Requests-Scala aims to
@@ -43,6 +43,7 @@ For a hands-on introduction to this library, take a look at the following blog p
   - [Sessions](#sessions)
   - [Why Requests-Scala?](#why-requests-scala)
   - [Changelog](#changelog)
+    - [0.9.1](#091)
     - [0.9.0](#090)
     - [0.8.0](#080)
     - [0.7.1](#071)
@@ -64,9 +65,9 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.9.0" // mill
-"com.lihaoyi" %% "requests" % "0.9.0" // sbt
-compile "com.lihaoyi:requests_2.12:0.9.0" //gradle
+ivy"com.lihaoyi::requests:0.9.1" // mill
+"com.lihaoyi" %% "requests" % "0.9.1" // sbt
+compile "com.lihaoyi:requests_2.12:0.9.1" //gradle
 ```
 
 ## Making a Request
@@ -679,6 +680,11 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.9.1
+
+- Fix thread leak for `requests.get` due to usage of `java.net.HttpClient`
+  [#215](https://github.com/com-lihaoyi/requests-scala/pull/215)
 
 ### 0.9.0
 
