@@ -26,10 +26,11 @@ object ResourceLeakTests extends TestSuite {
         val initialThreadCount = Thread.activeCount()
 
         // Make many requests - each should clean up its threads
-        val requestCount = 100
-        for (i <- 0 until requestCount) {
-          requests.post(url, data = s"request $i")
-        }
+        val requestCount = 10000
+        val start = System.currentTimeMillis()
+        for (i <- 0 until requestCount) requests.post(url, data = s"request $i")
+        val end = System.currentTimeMillis()
+        println("Time taken " + (end - start))
 
         val finalThreadCount = Thread.activeCount()
         val threadGrowth = finalThreadCount - initialThreadCount
