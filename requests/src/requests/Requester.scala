@@ -42,6 +42,12 @@ trait BaseSession {
   lazy val patch = Requester("PATCH", this)
 
   def send(method: String) = Requester(method, this)
+
+  // Shared HttpClient for this session, lazily initialized
+  lazy val sharedHttpClientExecutor: ExecutorService = Executors.newCachedThreadPool()
+  lazy val sharedHttpClient: HttpClient = BaseSession.buildHttpClient(
+    proxy, cert, sslContext, verifySslCerts, connectTimeout, sharedHttpClientExecutor
+  )
 }
 
 object BaseSession {
@@ -50,6 +56,37 @@ object BaseSession {
     "Accept-Encoding" -> "gzip, deflate",
     "Accept" -> "*/*",
   )
+
+  def buildHttpClient(
+    proxy: (String, Int),
+    cert: Cert,
+    sslContext: SSLContext,
+    verifySslCerts: Boolean,
+    connectTimeout: Int,
+    executor: ExecutorService
+  ): HttpClient = {
+    val builder = HttpClient
+      .newBuilder()
+      .executor(executor)
+      .followRedirects(HttpClient.Redirect.NEVER)
+      .proxy(proxy match {
+        case null       => ProxySelector.getDefault
+        case (ip, port) => ProxySelector.of(new InetSocketAddress(ip, port))
+      })
+      .sslContext(
+        if (cert != null)
+          Util.clientCertSSLContext(cert, verifySslCerts)
+        else if (sslContext != null)
+          sslContext
+        else if (!verifySslCerts)
+          Util.noVerifySSLContext
+        else
+          SSLContext.getDefault,
+      )
+      .connectTimeout(Duration.ofMillis(connectTimeout))
+
+    builder.build()
+  }
 }
 
 object Requester {
@@ -211,28 +248,23 @@ case class Requester(verb: String, sess: BaseSession) {
         new java.net.URL(url + firstSep + encodedParams)
       } else url0
 
-      val executor: ExecutorService = Executors.newSingleThreadExecutor()
+      // Check if we can reuse the session's shared HttpClient
+      val useSharedClient =
+        proxy == sess.proxy &&
+        cert == sess.cert &&
+        sslContext == sess.sslContext &&
+        verifySslCerts == sess.verifySslCerts &&
+        connectTimeout == sess.connectTimeout
+
+      // For non-shared clients, create an executor that we'll shut down after the request
+      val executor: ExecutorService =
+        if (useSharedClient) null
+        else Executors.newSingleThreadExecutor()
+
       val httpClient: HttpClient =
-        HttpClient
-          .newBuilder()
-          .executor(executor)
-          .followRedirects(HttpClient.Redirect.NEVER)
-          .proxy(proxy match {
-            case null       => ProxySelector.getDefault
-            case (ip, port) => ProxySelector.of(new InetSocketAddress(ip, port))
-          })
-          .sslContext(
-            if (cert != null)
-              Util.clientCertSSLContext(cert, verifySslCerts)
-            else if (sslContext != null)
-              sslContext
-            else if (!verifySslCerts)
-              Util.noVerifySSLContext
-            else
-              SSLContext.getDefault,
-          )
-          .connectTimeout(Duration.ofMillis(connectTimeout))
-          .build()
+        if (useSharedClient) sess.sharedHttpClient
+        else BaseSession.buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, executor)
+
       try {
 
         val sessionCookieValues = for {
@@ -439,38 +471,41 @@ case class Requester(verb: String, sess: BaseSession) {
           }
         }
       } finally {
-        // Try to close HttpClient if close() method exists (Java 21+)
-        try {
-          val closeMethod = classOf[HttpClient].getMethod("close")
-          closeMethod.invoke(httpClient)
-        } catch {
-          case _: NoSuchMethodException =>
-            // Java < 21: use reflection to access internal selectorManager and close its selector
-            // HttpClient.newBuilder().build() returns HttpClientFacade which wraps HttpClientImpl
-            try {
-              val facadeClass = httpClient.getClass
-              val implField = facadeClass.getDeclaredField("impl")
-              implField.setAccessible(true)
-              val impl = implField.get(httpClient)
-              val selectorManagerField = impl.getClass.getDeclaredField("selmgr")
-              selectorManagerField.setAccessible(true)
-              val selectorManager = selectorManagerField.get(impl)
-              // SelectorManager has a 'selector' field we can close
-              val selectorField = selectorManager.getClass.getDeclaredField("selector")
-              selectorField.setAccessible(true)
-              val selector = selectorField.get(selectorManager)
-              val closeMethod = selector.getClass.getMethod("close")
-              closeMethod.invoke(selector)
-            } catch {
-              case _: Exception =>
-                System.err.println(
-                  "requests: Unable to close HttpClient SelectorManager thread. " +
-                  "To fix thread leaks on Java <21, add JVM arg: " +
-                  "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
-                )
-            }
+        // Only clean up if we created a temporary HttpClient (not using shared)
+        if (!useSharedClient) {
+          // Try to close HttpClient if close() method exists (Java 21+)
+          try {
+            val closeMethod = classOf[HttpClient].getMethod("close")
+            closeMethod.invoke(httpClient)
+          } catch {
+            case _: NoSuchMethodException =>
+              // Java < 21: use reflection to access internal selectorManager and close its selector
+              // HttpClient.newBuilder().build() returns HttpClientFacade which wraps HttpClientImpl
+              try {
+                val facadeClass = httpClient.getClass
+                val implField = facadeClass.getDeclaredField("impl")
+                implField.setAccessible(true)
+                val impl = implField.get(httpClient)
+                val selectorManagerField = impl.getClass.getDeclaredField("selmgr")
+                selectorManagerField.setAccessible(true)
+                val selectorManager = selectorManagerField.get(impl)
+                // SelectorManager has a 'selector' field we can close
+                val selectorField = selectorManager.getClass.getDeclaredField("selector")
+                selectorField.setAccessible(true)
+                val selector = selectorField.get(selectorManager)
+                val closeMethod = selector.getClass.getMethod("close")
+                closeMethod.invoke(selector)
+              } catch {
+                case _: Exception =>
+                  System.err.println(
+                    "requests: Unable to close HttpClient SelectorManager thread. " +
+                    "To fix thread leaks on Java <21, add JVM arg: " +
+                    "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
+                  )
+              }
+          }
+          executor.shutdown()
         }
-        executor.shutdown()
       }
     }
   }
