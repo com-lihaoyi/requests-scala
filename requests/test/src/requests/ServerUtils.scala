@@ -37,10 +37,13 @@ object ServerUtils {
       val msg = new Plumper(c).decompress(t.getRequestBody)
       t.sendResponseHeaders(200, msg.length)
       t.getResponseBody.write(msg.getBytes())
+      t.getResponseBody.close()
     } catch {
       case e: Exception =>
         e.printStackTrace()
         t.sendResponseHeaders(500, -1)
+    } finally {
+      t.close()
     }
   }
 

@@ -1,6 +1,8 @@
 package requests
 
 import utest._
+import java.net.URI
+import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 
 /**
  * Tests for resource/thread leaks when making many HTTP requests.
@@ -30,12 +32,38 @@ object ResourceLeakTests extends TestSuite {
         val start = System.currentTimeMillis()
         for (i <- 0 until requestCount) requests.post(url, data = s"request $i")
         val end = System.currentTimeMillis()
-        println("Time taken " + (end - start))
+        println(s"requests-scala: $requestCount requests in ${end - start}ms")
 
         val finalThreadCount = Thread.activeCount()
         val threadGrowth = finalThreadCount - initialThreadCount
 
         // Thread count should stay bounded - no significant leak
+        assert(threadGrowth < 20)
+      }
+    }
+
+    test("rawHttpClientPerformance") {
+      // Baseline comparison using raw java.net.http.HttpClient with a shared client
+      ServerUtils.usingEchoServer { port =>
+        val url = s"http://localhost:$port/echo"
+
+        val initialThreadCount = Thread.activeCount()
+
+        val requestCount = 10000
+        val client = HttpClient.newHttpClient()
+        val start = System.currentTimeMillis()
+        for (i <- 0 until requestCount) {
+          val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .POST(HttpRequest.BodyPublishers.ofString(s"request $i"))
+            .build()
+          client.send(request, HttpResponse.BodyHandlers.ofString())
+        }
+        val end = System.currentTimeMillis()
+        println(s"raw HttpClient (shared): $requestCount requests in ${end - start}ms")
+
+        val finalThreadCount = Thread.activeCount()
+        val threadGrowth = finalThreadCount - initialThreadCount
         assert(threadGrowth < 20)
       }
     }
