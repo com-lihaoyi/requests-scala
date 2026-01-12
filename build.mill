@@ -56,6 +56,9 @@ trait RequestsTestModule extends TestModule.Utest {
     mvn"com.lihaoyi::ujson::1.3.13",
     mvn"com.dimafeng::testcontainers-scala-core:0.41.3"
   )
+  def forkArgs = Seq(
+    "--add-opens", "java.net.http/jdk.internal.net.http=ALL-UNNAMED"
+  )
 }
 
 object requests extends Module {
