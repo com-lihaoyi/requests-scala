@@ -142,14 +142,6 @@ object Requester {
     m.setAccessible(true)
     m
   }
-
-  /** Check if an exception's direct cause is a certificate-related error */
-  def causedByCertificateError(e: Throwable): Boolean = {
-    e.getCause match {
-      case _: java.security.cert.CertificateException | _: java.security.cert.CertPathValidatorException => true
-      case _ => false
-    }
-  }
 }
 
 case class Requester(verb: String, sess: BaseSession) {
@@ -371,7 +363,9 @@ case class Requester(verb: String, sess: BaseSession) {
           case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
             throw new TimeoutException(url, readTimeout, connectTimeout)
           case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
-          case e: IOException if Requester.causedByCertificateError(e) => throw new InvalidCertException(url, e)
+          case e: java.nio.channels.UnresolvedAddressException => throw new UnknownHostException(url, e.getMessage)
+          case e: java.security.cert.CertificateException => throw new InvalidCertException(url, e)
+          case e: java.security.cert.CertPathValidatorException=> throw new InvalidCertException(url, e)
         }
 
         val response =
@@ -382,6 +376,7 @@ case class Requester(verb: String, sess: BaseSession) {
                 // Sometimes the error we care about is wrapped in an IOException
                 // so check inside to see if there's something we want to handle
                 .orElse(wrapError.lift(e.getCause))
+                .orElse(Option(e.getCause).flatMap(c => wrapError.lift(c.getCause)))
                 .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
           }
   
