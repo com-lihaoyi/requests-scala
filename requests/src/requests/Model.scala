@@ -46,6 +46,7 @@ case class Request(
     readTimeout: Int = 0,
     connectTimeout: Int = 0,
     proxy: (String, Int) = null,
+    proxyAuth: (String, String) = null,
     cert: Cert = null,
     sslContext: SSLContext = null,
     cookies: Map[String, HttpCookie] = Map(),

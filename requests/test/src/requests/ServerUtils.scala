@@ -15,6 +15,95 @@ object ServerUtils {
     finally server.stop()
   }
 
+  /**
+   * Creates a mock proxy server that captures headers from incoming requests.
+   * The server doesn't actually proxy requests - it just captures headers and returns a 502.
+   */
+  def usingProxyServer(f: (Int, scala.collection.mutable.Map[String, String]) => Unit): Unit = {
+    val receivedHeaders = scala.collection.mutable.Map[String, String]()
+    val server = new MockProxyServer(receivedHeaders)
+    try f(server.getPort(), receivedHeaders)
+    finally server.stop()
+  }
+
+  /**
+   * Creates a simple HTTP server that captures headers and returns a 200 response.
+   */
+  def usingHeaderCaptureServer(f: (Int, scala.collection.mutable.Map[String, String]) => Unit): Unit = {
+    val receivedHeaders = scala.collection.mutable.Map[String, String]()
+    val server = new HeaderCaptureServer(receivedHeaders)
+    try f(server.getPort(), receivedHeaders)
+    finally server.stop()
+  }
+
+  private class MockProxyServer(receivedHeaders: scala.collection.mutable.Map[String, String]) extends HttpHandler {
+    private val server: HttpServer =
+      HttpServer.create(new InetSocketAddress(0), 0)
+    server.createContext("/", this)
+    server.setExecutor(null)
+    server.start()
+
+    def getPort(): Int = server.getAddress.getPort
+
+    def stop(): Unit = server.stop(0)
+
+    override def handle(t: HttpExchange): Unit = try {
+      // Capture all headers (convert to lowercase for consistent lookup)
+      val headers = t.getRequestHeaders
+      headers.forEach { (key, values) =>
+        if (values != null && !values.isEmpty) {
+          receivedHeaders.put(key.toLowerCase, values.get(0))
+        }
+      }
+
+      // Return 502 Bad Gateway (simulating a proxy that can't reach the target)
+      val response = "Mock proxy - request captured"
+      t.sendResponseHeaders(502, response.length)
+      t.getResponseBody.write(response.getBytes())
+      t.getResponseBody.close()
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        t.sendResponseHeaders(500, -1)
+    } finally {
+      t.close()
+    }
+  }
+
+  private class HeaderCaptureServer(receivedHeaders: scala.collection.mutable.Map[String, String]) extends HttpHandler {
+    private val server: HttpServer =
+      HttpServer.create(new InetSocketAddress(0), 0)
+    server.createContext("/", this)
+    server.setExecutor(null)
+    server.start()
+
+    def getPort(): Int = server.getAddress.getPort
+
+    def stop(): Unit = server.stop(0)
+
+    override def handle(t: HttpExchange): Unit = try {
+      // Capture all headers (convert to lowercase for consistent lookup)
+      val headers = t.getRequestHeaders
+      headers.forEach { (key, values) =>
+        if (values != null && !values.isEmpty) {
+          receivedHeaders.put(key.toLowerCase, values.get(0))
+        }
+      }
+
+      // Return 200 OK
+      val response = "OK"
+      t.sendResponseHeaders(200, response.length)
+      t.getResponseBody.write(response.getBytes())
+      t.getResponseBody.close()
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        t.sendResponseHeaders(500, -1)
+    } finally {
+      t.close()
+    }
+  }
+
   private class EchoServer extends HttpHandler {
     private val server: HttpServer =
       HttpServer.create(new InetSocketAddress(0), 0)
