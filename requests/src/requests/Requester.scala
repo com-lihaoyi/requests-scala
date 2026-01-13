@@ -380,7 +380,9 @@ case class Requester(verb: String, sess: BaseSession) {
           try httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
           catch {
             case e: Throwable =>
-              wrapError.applyOrElse(e, wrapError.applyOrElse(e.getCause, throw new RequestsException(e.getMessage, Some(e))))
+              wrapError.lift(e)
+                .orElse(wrapError.lift(e.getCause))
+                .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
           }
   
         val responseCode = response.statusCode()
