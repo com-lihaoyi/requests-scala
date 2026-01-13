@@ -43,10 +43,10 @@ trait BaseSession extends AutoCloseable {
 
   def send(method: String) = Requester(method, this)
 
-  // Shared HttpClient for this session, lazily initialized
-  lazy val sharedHttpClientExecutor: ExecutorService = Executors.newCachedThreadPool()
+  // Executor and HttpClient for this session, lazily initialized
+  lazy val executor: ExecutorService = Executors.newCachedThreadPool()
   lazy val sharedHttpClient: HttpClient = BaseSession.buildHttpClient(
-    proxy, cert, sslContext, verifySslCerts, connectTimeout, sharedHttpClientExecutor
+    proxy, cert, sslContext, verifySslCerts, connectTimeout, executor
   )
 
   /**
@@ -55,7 +55,7 @@ trait BaseSession extends AutoCloseable {
    */
   def close(): Unit = {
     BaseSession.closeHttpClient(sharedHttpClient)
-    sharedHttpClientExecutor.shutdown()
+    executor.shutdown()
   }
 }
 
@@ -302,14 +302,9 @@ case class Requester(verb: String, sess: BaseSession) {
         verifySslCerts == sess.verifySslCerts &&
         connectTimeout == sess.connectTimeout
 
-      // For non-shared clients, create an executor that we'll shut down after the request
-      val executor: ExecutorService =
-        if (useSharedClient) null
-        else Executors.newSingleThreadExecutor()
-
       val httpClient: HttpClient =
         if (useSharedClient) sess.sharedHttpClient
-        else BaseSession.buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, executor)
+        else BaseSession.buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, sess.executor)
 
       try {
 
@@ -365,8 +360,7 @@ case class Requester(verb: String, sess: BaseSession) {
             .method(upperCaseVerb, bodyPublisher)
 
         val response =
-          try
-            httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+          try httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
           catch {
             case e: javax.net.ssl.SSLHandshakeException => throw new InvalidCertException(url, e)
             case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
@@ -398,7 +392,7 @@ case class Requester(verb: String, sess: BaseSession) {
             .flatten
             .exists(_.contains("deflate"))
         def persistCookies() = {
-          if (sess.persistCookies) {
+          if (sess.persistCookies) sess.cookies.synchronized {
             headerFields
               .get("set-cookie")
               .iterator
@@ -503,7 +497,6 @@ case class Requester(verb: String, sess: BaseSession) {
         // Only clean up if we created a temporary HttpClient (not using shared)
         if (!useSharedClient) {
           BaseSession.closeHttpClient(httpClient)
-          executor.shutdown()
         }
       }
     }
