@@ -142,6 +142,14 @@ object Requester {
     m.setAccessible(true)
     m
   }
+
+  /** Check if an exception's direct cause is a certificate-related error */
+  def causedByCertificateError(e: Throwable): Boolean = {
+    e.getCause match {
+      case _: java.security.cert.CertificateException | _: java.security.cert.CertPathValidatorException => true
+      case _ => false
+    }
+  }
 }
 
 case class Requester(verb: String, sess: BaseSession) {
@@ -367,6 +375,7 @@ case class Requester(verb: String, sess: BaseSession) {
               throw new TimeoutException(url, readTimeout, connectTimeout)
             case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
             case e: java.net.ConnectException     => throw new UnknownHostException(url, e.getMessage)
+            case e: IOException if Requester.causedByCertificateError(e) => throw new InvalidCertException(url, e)
             case e: IOException                   => throw new RequestsException(e.getMessage, Some(e))
           }
   
