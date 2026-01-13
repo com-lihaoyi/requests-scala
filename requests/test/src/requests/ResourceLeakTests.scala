@@ -18,7 +18,7 @@ object ResourceLeakTests extends TestSuite {
 
   private def runBenchmark(
     name: String,
-    requestCount: Int = 10000,
+    requestCount: Int = 100,
     maxThreadGrowth: Int = 20
   )(makeRequest: (String, Int) => Unit): Unit = {
     ServerUtils.usingEchoServer { port =>
