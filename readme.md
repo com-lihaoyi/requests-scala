@@ -1,4 +1,4 @@
-# Requests-Scala 0.9.1
+# Requests-Scala 0.9.2
 
 Requests-Scala is a Scala port of the popular Python
 [Requests](http://docs.python-requests.org/) HTTP client. Requests-Scala aims to
@@ -43,6 +43,7 @@ For a hands-on introduction to this library, take a look at the following blog p
   - [Sessions](#sessions)
   - [Why Requests-Scala?](#why-requests-scala)
   - [Changelog](#changelog)
+    - [0.9.2](#092)
     - [0.9.1](#091)
     - [0.9.0](#090)
     - [0.8.0](#080)
@@ -65,10 +66,10 @@ For a hands-on introduction to this library, take a look at the following blog p
 Use the following import to get you started:
 
 ```scala
-ivy"com.lihaoyi::requests:0.9.1" // mill
-"com.lihaoyi" %% "requests" % "0.9.1" // sbt
-compile "com.lihaoyi:requests_2.12:0.9.1" //gradle
-//> using dep "com.lihaoyi::requests:0.9.1"  // scala-cli
+ivy"com.lihaoyi::requests:0.9.2" // mill
+"com.lihaoyi" %% "requests" % "0.9.2" // sbt
+compile "com.lihaoyi:requests_2.12:0.9.2" //gradle
+//> using dep "com.lihaoyi::requests:0.9.2"  // scala-cli
 ```
 
 ## Making a Request
@@ -721,6 +722,12 @@ polished, but you should definitely try it out as the HTTP client for your next
 codebase or project!
 
 ## Changelog
+
+### 0.9.2
+
+- Allow re-use of underlying `java.net.HttpClient` on a per-session basis [#216](https://github.com/com-lihaoyi/requests-scala/pull/216)
+- Remove incorrect ConnectException wrapping [#217](https://github.com/com-lihaoyi/requests-scala/pull/217)
+
 
 ### 0.9.1
 
