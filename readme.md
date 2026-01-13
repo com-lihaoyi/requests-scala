@@ -499,8 +499,18 @@ requests.get(
 
 ## Sessions
 
-A `requests.Session` automatically handles sending/receiving/persisting cookies
-for you across multiple requests:
+`requests.Session` serves two purposes:
+
+- Letting you re-use the underlying HTTP client infrastructure across requests,
+  which improves performance
+
+- Automatically handles sending/receiving/persisting cookies across
+  multiple requests
+
+Note that sessions must be explicitly `close`d after use to prevent leakage 
+of client threads and other resources
+
+### Session Cookies
 
 ```scala
 val s = requests.Session()
@@ -511,6 +521,8 @@ val r2 = s.get("https://httpbin.org/cookies")
 
 r2.text()
 // {"cookies":{"freeform":"test"}}
+
+s.close() // Don't forget to close the session!
 ```
 
 If you want to deal with a website that uses cookies, it's usually easier to use
@@ -536,6 +548,34 @@ val r2 = s.get("https://httpbin.org/headers")
 r2.text()
 // {"headers":{"X-Special-Header":"omg", ...}}
 ```
+
+In the case of concurrent requests, the last response to be processed will have its
+cookies over-write any previous values.
+
+You can instantiate the session with `persistCookies = false` if you want to avoid
+persisting cookies across requests and purely want `Session`'s for its performance
+or convenience benefits.
+
+### Session Performance
+
+The default `requests.*` API and each `requests.Session` re-uses the same
+underlying `java.net.HttpClient` where possible for performance.
+This saves ~0.2 milliseconds per request, and reduces memory usage from sharing
+the client's threads.
+
+Requests needs to spawn a new client if you customize one of the following keys
+when making a request:
+
+- `proxy`
+- `cert`
+- `sslContext`
+- `verifySslCerts`
+- `connectTimeout`
+
+Whether the performance impact of spawning a new client matters depends on your use
+case. For light scripting making one request here and there, 0.2 milliseconds and a
+few MB of memory overhead is negligible. For applications making large numbers of
+requests, it may be worth instantiated dedicated `requests.Session`
 
 ## Why Requests-Scala?
 
