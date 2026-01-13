@@ -381,6 +381,8 @@ case class Requester(verb: String, sess: BaseSession) {
           catch {
             case e: Throwable =>
               wrapError.lift(e)
+                // Sometimes the error we care about is wrapped in an IOException
+                // so check inside to see if there's something we want to handle
                 .orElse(wrapError.lift(e.getCause))
                 .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
           }
