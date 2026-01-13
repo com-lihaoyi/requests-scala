@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionException, Future}
 
 import javax.net.ssl.SSLContext
 
-trait BaseSession {
+trait BaseSession extends AutoCloseable {
   def headers: Map[String, String]
   def cookies: mutable.Map[String, HttpCookie]
   def readTimeout: Int
@@ -48,6 +48,15 @@ trait BaseSession {
   lazy val sharedHttpClient: HttpClient = BaseSession.buildHttpClient(
     proxy, cert, sslContext, verifySslCerts, connectTimeout, sharedHttpClientExecutor
   )
+
+  /**
+   * Closes the shared HttpClient and its executor. Call this when you're done
+   * with the session to release resources and prevent thread leaks.
+   */
+  def close(): Unit = {
+    BaseSession.closeHttpClient(sharedHttpClient)
+    sharedHttpClientExecutor.shutdown()
+  }
 }
 
 object BaseSession {
@@ -86,6 +95,43 @@ object BaseSession {
       .connectTimeout(Duration.ofMillis(connectTimeout))
 
     builder.build()
+  }
+
+  /**
+   * Closes an HttpClient, using reflection to handle both Java 21+ (which has close())
+   * and earlier versions (which require accessing internal selector).
+   */
+  def closeHttpClient(httpClient: HttpClient): Unit = {
+    try {
+      val closeMethod = classOf[HttpClient].getMethod("close")
+      closeMethod.invoke(httpClient)
+    } catch {
+      case _: NoSuchMethodException =>
+        // Java < 21: use reflection to access internal selectorManager and close its selector
+        // HttpClient.newBuilder().build() returns HttpClientFacade which wraps HttpClientImpl
+        try {
+          val facadeClass = httpClient.getClass
+          val implField = facadeClass.getDeclaredField("impl")
+          implField.setAccessible(true)
+          val impl = implField.get(httpClient)
+          val selectorManagerField = impl.getClass.getDeclaredField("selmgr")
+          selectorManagerField.setAccessible(true)
+          val selectorManager = selectorManagerField.get(impl)
+          // SelectorManager has a 'selector' field we can close
+          val selectorField = selectorManager.getClass.getDeclaredField("selector")
+          selectorField.setAccessible(true)
+          val selector = selectorField.get(selectorManager)
+          val closeMethod = selector.getClass.getMethod("close")
+          closeMethod.invoke(selector)
+        } catch {
+          case _: Exception =>
+            System.err.println(
+              "requests: Unable to close HttpClient SelectorManager thread. " +
+              "To fix thread leaks on Java <21, add JVM arg: " +
+              "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
+            )
+        }
+    }
   }
 }
 
@@ -300,51 +346,34 @@ case class Requester(verb: String, sess: BaseSession) {
         val headersKeyValueAlternating = lastOfEachHeader.values.toList.flatMap {
           case (k, v) => Seq(k, v)
         }
-  
-        val requestBodyInputStream = new PipedInputStream()
-        val requestBodyOutputStream = new PipedOutputStream(requestBodyInputStream)
-  
+
+        // Buffer the request body
+        val requestBodyBuffer = new ByteArrayOutputStream()
+        usingOutputStream(compress.wrap(requestBodyBuffer)) { os => data.write(os) }
+        val requestBodyBytes = requestBodyBuffer.toByteArray
+
         val bodyPublisher: HttpRequest.BodyPublisher =
-          HttpRequest.BodyPublishers.ofInputStream(new Supplier[InputStream] {
-            override def get() = requestBodyInputStream
-          })
-  
+          if (requestBodyBytes.isEmpty) HttpRequest.BodyPublishers.noBody()
+          else HttpRequest.BodyPublishers.ofByteArray(requestBodyBytes)
+
         val requestBuilder =
           HttpRequest
             .newBuilder()
             .uri(url1.toURI)
             .timeout(Duration.ofMillis(readTimeout))
             .headers(headersKeyValueAlternating: _*)
-            .method(
-              upperCaseVerb,
-              (contentLengthHeader.headOption.map(_._2), compress) match {
-                case (Some("0"), _) => HttpRequest.BodyPublishers.noBody()
-                case (Some(n), Compress.None) =>
-                  HttpRequest.BodyPublishers.fromPublisher(bodyPublisher, n.toInt)
-                case _ => bodyPublisher
-              },
-            )
-  
-        val fut = httpClient.sendAsync(
-          requestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream(),
-        )
-  
-        usingOutputStream(compress.wrap(requestBodyOutputStream)) { os => data.write(os) }
-  
+            .method(upperCaseVerb, bodyPublisher)
+
         val response =
           try
-            fut.get()
+            httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
           catch {
-            case e: ExecutionException =>
-              throw e.getCause match {
-                case e: javax.net.ssl.SSLHandshakeException => new InvalidCertException(url, e)
-                case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
-                  new TimeoutException(url, readTimeout, connectTimeout)
-                case e: java.net.UnknownHostException => new UnknownHostException(url, e.getMessage)
-                case e: java.net.ConnectException     => new UnknownHostException(url, e.getMessage)
-                case e                                => new RequestsException(e.getMessage, Some(e))
-              }
+            case e: javax.net.ssl.SSLHandshakeException => throw new InvalidCertException(url, e)
+            case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
+              throw new TimeoutException(url, readTimeout, connectTimeout)
+            case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
+            case e: java.net.ConnectException     => throw new UnknownHostException(url, e.getMessage)
+            case e: IOException                   => throw new RequestsException(e.getMessage, Some(e))
           }
   
         val responseCode = response.statusCode()
@@ -473,37 +502,7 @@ case class Requester(verb: String, sess: BaseSession) {
       } finally {
         // Only clean up if we created a temporary HttpClient (not using shared)
         if (!useSharedClient) {
-          // Try to close HttpClient if close() method exists (Java 21+)
-          try {
-            val closeMethod = classOf[HttpClient].getMethod("close")
-            closeMethod.invoke(httpClient)
-          } catch {
-            case _: NoSuchMethodException =>
-              // Java < 21: use reflection to access internal selectorManager and close its selector
-              // HttpClient.newBuilder().build() returns HttpClientFacade which wraps HttpClientImpl
-              try {
-                val facadeClass = httpClient.getClass
-                val implField = facadeClass.getDeclaredField("impl")
-                implField.setAccessible(true)
-                val impl = implField.get(httpClient)
-                val selectorManagerField = impl.getClass.getDeclaredField("selmgr")
-                selectorManagerField.setAccessible(true)
-                val selectorManager = selectorManagerField.get(impl)
-                // SelectorManager has a 'selector' field we can close
-                val selectorField = selectorManager.getClass.getDeclaredField("selector")
-                selectorField.setAccessible(true)
-                val selector = selectorField.get(selectorManager)
-                val closeMethod = selector.getClass.getMethod("close")
-                closeMethod.invoke(selector)
-              } catch {
-                case _: Exception =>
-                  System.err.println(
-                    "requests: Unable to close HttpClient SelectorManager thread. " +
-                    "To fix thread leaks on Java <21, add JVM arg: " +
-                    "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
-                  )
-              }
-          }
+          BaseSession.closeHttpClient(httpClient)
           executor.shutdown()
         }
       }
