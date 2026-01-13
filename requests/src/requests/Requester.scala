@@ -362,8 +362,7 @@ case class Requester(verb: String, sess: BaseSession) {
         val response =
           try httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
           catch {
-            case e: javax.net.ssl.SSLHandshakeException => throw new InvalidCertException(url, e)
-            case e: java.security.cert.CertPathValidatorException => throw new InvalidCertException(url, e)
+            case e: javax.net.ssl.SSLException => throw new InvalidCertException(url, e)
             case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
               throw new TimeoutException(url, readTimeout, connectTimeout)
             case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
