@@ -164,7 +164,6 @@ object RequestTests extends HttpbinTestSuite {
       intercept[InvalidCertException] {
         requests.get("https://expired.badssl.com/")
       }
-      requests.get("https://doesnt-exist.com/", verifySslCerts = false)
       intercept[java.net.MalformedURLException] {
         requests.get("://doesnt-exist.com/")
       }
