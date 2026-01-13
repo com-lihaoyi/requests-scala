@@ -262,8 +262,7 @@ case class Requester(verb: String, sess: BaseSession) {
    *
    * @param onHeadersReceived
    *   the second callback to be called, this provides access to the response's status code, status
-   *   message, headers, and any previous re-direct responses. Returns a boolean, where `false` can
-   *   be used to
+   *   message, headers, and any previous re-direct responses.
    *
    * @return
    *   a `Writable` that can be used to write the output data to any destination
