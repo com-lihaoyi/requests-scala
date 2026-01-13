@@ -371,7 +371,6 @@ case class Requester(verb: String, sess: BaseSession) {
           case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
             throw new TimeoutException(url, readTimeout, connectTimeout)
           case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
-          case e: java.net.ConnectException     => throw new UnknownHostException(url, e.getMessage)
           case e: IOException if Requester.causedByCertificateError(e) => throw new InvalidCertException(url, e)
         }
 
