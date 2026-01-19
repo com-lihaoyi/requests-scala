@@ -23,7 +23,7 @@ jobs:
       matrix:
         java: ['11', '17', '21']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run tests
         run: |
           sed -i 's#//| mill-jvm-version: 11#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
@@ -32,7 +32,7 @@ jobs:
   check-binary-compatibility:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Check Binary Compatibility
@@ -52,7 +52,7 @@ jobs:
       LC_ALL: "en_US.UTF-8"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Publish to Maven Central
         run: ./mill -i mill.scalalib.SonatypeCentralPublishModule/
 
