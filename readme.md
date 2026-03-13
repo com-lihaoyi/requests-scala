@@ -508,7 +508,7 @@ requests.get(
 - Automatically handles sending/receiving/persisting cookies across
   multiple requests
 
-Note that sessions must be explicitly `close`d after use to prevent leakage 
+Note that sessions must be explicitly `close`d after use to prevent leakage
 of client threads and other resources
 
 ### Session Cookies

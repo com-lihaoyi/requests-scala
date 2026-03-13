@@ -19,7 +19,7 @@ object RequestTests extends HttpbinTestSuite {
             val res = r(s"$baseUrl/${r2.verb.toLowerCase()}")
             assert(res.statusCode == 200)
           } else {
-            intercept[RequestFailedException] {
+            assertThrows[RequestFailedException] {
               r(s"$baseUrl/${r2.verb.toLowerCase()}")
             }
           }
@@ -141,16 +141,16 @@ object RequestTests extends HttpbinTestSuite {
 
     test("timeouts") {
       test("read") {
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           requests.get(s"http://$localHttpbin/delay/1", readTimeout = 10)
         }
         requests.get(s"http://$localHttpbin/delay/1", readTimeout = 2000)
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           requests.get(s"http://$localHttpbin/delay/3", readTimeout = 2000)
         }
       }
       test("connect") {
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           // use remote httpbin.org so it needs more time to connect
           requests.get(s"https://httpbin.org/delay/1", connectTimeout = 1)
         }
@@ -158,16 +158,16 @@ object RequestTests extends HttpbinTestSuite {
     }
 
     test("failures") {
-      intercept[UnknownHostException] {
+      assertThrows[UnknownHostException] {
         requests.get("https://doesnt-exist-at-all.com/")
       }
-      intercept[InvalidCertException] {
+      assertThrows[InvalidCertException] {
         requests.get("https://expired.badssl.com/")
       }
 
       requests.get("https://expired.badssl.com/", verifySslCerts = false)
 
-      intercept[java.net.MalformedURLException] {
+      assertThrows[java.net.MalformedURLException] {
         requests.get("://doesnt-exist.com/")
       }
     }
@@ -303,9 +303,9 @@ object RequestTests extends HttpbinTestSuite {
      * can compare
      */
     test("compressionData") {
-      import requests.Compress._
+      import requests.Compress
       val str = "I am deflater mouse"
-      Seq(None, Gzip, Deflate).foreach { c =>
+      Seq(Compress.None, Compress.Gzip, Compress.Deflate).foreach { c =>
         ServerUtils.usingEchoServer { port =>
           val response =
             requests.post(
