@@ -88,6 +88,7 @@ object requests extends Module {
     override def nativeLinkStubs = true
 
     override def mimaPreviousVersions = Seq.empty
+    override def mimaPreviousArtifacts = Seq.empty
 
     object test extends ScalaNativeTests with RequestsNativeTestModule
   }

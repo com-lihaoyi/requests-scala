@@ -1,9 +1,7 @@
 package requests
 
 import java.io._
-import java.net.HttpCookie
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.scalanative.libc.stdlib
 import scala.scalanative.unsafe._
@@ -17,7 +15,7 @@ private[requests] object Platform {
 
   private def ensureGlobalInit(): Unit = {
     if (!globalInitialized) {
-      val code = libcurl.curl_global_init(0L)
+      val code = libcurl.curl_global_init(0.toCLong)
       if (code != 0) {
         throw new RequestsException(s"curl_global_init failed with code $code")
       }
@@ -49,19 +47,21 @@ private[requests] object Platform {
     var bodyPtr: Ptr[Byte] = null
 
     try {
-      Zone { implicit z =>
+      val z = Zone.open()
+      try {
+        implicit val iz: Zone = z
         libcurl.curl_easy_setopt_string(curl, libcurl.CURLOPT_URL, toCString(url))
-        libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_FOLLOWLOCATION, 0L)
-        libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_TIMEOUT_MS, readTimeout.toLong)
+        libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_FOLLOWLOCATION, 0.toCLong)
+        libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_TIMEOUT_MS, readTimeout.toCLong)
         libcurl.curl_easy_setopt_long(
           curl,
           libcurl.CURLOPT_CONNECTTIMEOUT_MS,
-          connectTimeout.toLong,
+          connectTimeout.toCLong,
         )
 
         if (!verifySslCerts) {
-          libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_SSL_VERIFYPEER, 0L)
-          libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_SSL_VERIFYHOST, 0L)
+          libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_SSL_VERIFYPEER, 0.toCLong)
+          libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_SSL_VERIFYHOST, 0.toCLong)
         }
 
         if (proxy != null) {
@@ -71,11 +71,11 @@ private[requests] object Platform {
 
         method match {
           case "GET" =>
-            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_HTTPGET, 1L)
+            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_HTTPGET, 1.toCLong)
           case "POST" =>
-            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_POST, 1L)
+            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_POST, 1.toCLong)
           case "HEAD" =>
-            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_NOBODY, 1L)
+            libcurl.curl_easy_setopt_long(curl, libcurl.CURLOPT_NOBODY, 1.toCLong)
           case _ =>
             libcurl.curl_easy_setopt_string(
               curl,
@@ -105,7 +105,7 @@ private[requests] object Platform {
             libcurl.curl_easy_setopt_long(
               curl,
               libcurl.CURLOPT_POSTFIELDSIZE,
-              body.length.toLong,
+              body.length.toCLong,
             )
           }
 
@@ -172,7 +172,7 @@ private[requests] object Platform {
           }
 
           val responseCodePtr = alloc[CLong]()
-          !responseCodePtr = 0L
+          !responseCodePtr = 0.toCLong
           libcurl.curl_easy_getinfo_long(
             curl,
             libcurl.CURLINFO_RESPONSE_CODE.toUInt,
@@ -190,6 +190,8 @@ private[requests] object Platform {
         } finally {
           if (slist != null) libcurl.curl_slist_free_all(slist)
         }
+      } finally {
+        z.close()
       }
     } finally {
       if (bodyPtr != null) stdlib.free(bodyPtr)
