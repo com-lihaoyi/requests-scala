@@ -15,6 +15,7 @@ import com.github.lolgab.mill.mima._
 val communityBuildDottyVersion = sys.props.get("dottyVersion").toList
 val scalaNextVersion = sys.props.get("scalaNextVersion")
 val scalaVersions = List("2.12.20", "2.13.15", "3.3.4") ++ scalaNextVersion ++ communityBuildDottyVersion
+val scala3Versions = scalaVersions.filter(_.startsWith("3"))
 val scalaNativeVer = "0.5.6"
 
 trait MimaCheck extends Mima {
@@ -45,9 +46,8 @@ trait RequestsPublishModule extends PublishModule with MimaCheck {
   def mvnDeps = Seq(mvn"com.lihaoyi::geny::1.1.1")
 }
 
-trait RequestsCrossScalaModule extends CrossScalaModule with ScalaModule {
+trait RequestsModule extends CrossScalaModule with ScalaModule {
   def moduleDir = build.moduleDir / "requests"
-  def sources = Task.Sources("src")
 }
 
 trait RequestsTestModule extends TestModule.Utest {
@@ -62,18 +62,25 @@ trait RequestsTestModule extends TestModule.Utest {
 }
 
 object requests extends Module {
-  trait RequestsJvmModule extends RequestsCrossScalaModule with RequestsPublishModule {
+
+  trait RequestsJvmModule extends RequestsModule with RequestsPublishModule {
+    override def sources = Task.Sources("src", "src-jvm")
     object test extends ScalaTests with RequestsTestModule
   }
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
 
-  // trait RequestsNativeModule extends ScalaNativeModule with RequestsPublishModule {
-  //   override def scalaNativeVersion = scalaNativeVer
-  //
-  //   def mvnDeps =
-  //     super.mvnDeps() ++ Seq(mvn"com.github.lolgab::scala-native-crypto::0.1.0")
-  //
-  //   object test extends ScalaNativeTests with RequestsTestModule
-  // }
-  // object native extends Cross[RequestsNativeModule](scalaVersions)
+  trait RequestsNativeModule extends RequestsModule with ScalaNativeModule with RequestsPublishModule {
+    override def scalaNativeVersion = scalaNativeVer
+    override def sources = Task.Sources("src", "src-native")
+
+    override def mvnDeps =
+      super.mvnDeps() ++ Seq(
+        mvn"com.github.lolgab::scala-native-crypto::0.1.0"
+      )
+
+    override def nativeLinkStubs = true
+
+    object test extends ScalaNativeTests with RequestsTestModule
+  }
+  object native extends Cross[RequestsNativeModule](scala3Versions)
 }

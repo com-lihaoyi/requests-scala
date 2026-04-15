@@ -29,6 +29,15 @@ jobs:
           sed -i 's#//| mill-jvm-version: 11#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
           ./mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
 
+  test-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install libcurl
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+      - name: Compile Scala Native
+        run: ./mill -i requests.native.compile
+
   check-binary-compatibility:
     runs-on: ubuntu-latest
     steps:
