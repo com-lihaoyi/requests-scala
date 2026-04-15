@@ -61,6 +61,13 @@ trait RequestsTestModule extends TestModule.Utest {
   )
 }
 
+trait RequestsNativeTestModule extends TestModule.Utest {
+  override def mvnDeps = Seq(
+    mvn"com.lihaoyi::utest::0.9.5",
+    mvn"com.lihaoyi::ujson::4.4.3"
+  )
+}
+
 object requests extends Module {
 
   trait RequestsJvmModule extends RequestsModule with RequestsPublishModule {
@@ -80,7 +87,9 @@ object requests extends Module {
 
     override def nativeLinkStubs = true
 
-    object test extends ScalaNativeTests with RequestsTestModule
+    override def mimaPreviousVersions = Seq.empty
+
+    object test extends ScalaNativeTests with RequestsNativeTestModule
   }
   object native extends Cross[RequestsNativeModule](scala3Versions)
 }
