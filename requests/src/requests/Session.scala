@@ -34,6 +34,7 @@ case class Session(
     cookies: mutable.Map[String, HttpCookie] = mutable.LinkedHashMap.empty[String, HttpCookie],
     auth: RequestAuth = RequestAuth.Empty,
     proxy: (String, Int) = null,
+    proxyAuth: (String, String) = null,
     cert: Cert = null,
     sslContext: SSLContext = null,
     persistCookies: Boolean = true,

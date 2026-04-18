@@ -23,6 +23,7 @@ trait BaseSession extends AutoCloseable {
   def connectTimeout: Int
   def auth: RequestAuth
   def proxy: (String, Int)
+  def proxyAuth: (String, String)
   def cert: Cert
   def sslContext: SSLContext
   def maxRedirects: Int
@@ -199,6 +200,7 @@ case class Requester(verb: String, sess: BaseSession) {
       readTimeout: Int = sess.readTimeout,
       connectTimeout: Int = sess.connectTimeout,
       proxy: (String, Int) = sess.proxy,
+      proxyAuth: (String, String) = sess.proxyAuth,
       cert: Cert = sess.cert,
       sslContext: SSLContext = sess.sslContext,
       cookies: Map[String, HttpCookie] = Map(),
@@ -225,6 +227,7 @@ case class Requester(verb: String, sess: BaseSession) {
         readTimeout = readTimeout,
         connectTimeout = connectTimeout,
         proxy = proxy,
+        proxyAuth = proxyAuth,
         cert = cert,
         sslContext = sslContext,
         cookies = cookies,
@@ -275,6 +278,7 @@ case class Requester(verb: String, sess: BaseSession) {
       readTimeout: Int = sess.readTimeout,
       connectTimeout: Int = sess.connectTimeout,
       proxy: (String, Int) = sess.proxy,
+      proxyAuth: (String, String) = sess.proxyAuth,
       cert: Cert = sess.cert,
       sslContext: SSLContext = sess.sslContext,
       cookies: Map[String, HttpCookie] = Map(),
@@ -331,6 +335,10 @@ case class Requester(verb: String, sess: BaseSession) {
             headers ++
             compress.headers ++
             auth.header.map("Authorization" -> _) ++
+            (if (proxy != null && proxyAuth != null) {
+              val (username, password) = proxyAuth
+              Some("Proxy-Authorization" -> ("Basic " + java.util.Base64.getEncoder.encodeToString((username + ":" + password).getBytes())))
+            } else None) ++
             (if (allCookies.isEmpty) None
              else
                Some(
@@ -447,6 +455,7 @@ case class Requester(verb: String, sess: BaseSession) {
             readTimeout = readTimeout,
             connectTimeout = connectTimeout,
             proxy = proxy,
+            proxyAuth = proxyAuth,
             cert = cert,
             sslContext = sslContext,
             cookies = cookies,
@@ -537,6 +546,7 @@ case class Requester(verb: String, sess: BaseSession) {
       r.readTimeout,
       r.connectTimeout,
       r.proxy,
+      r.proxyAuth,
       r.cert,
       r.sslContext,
       r.cookies,
@@ -569,6 +579,7 @@ case class Requester(verb: String, sess: BaseSession) {
       readTimeout = r.readTimeout,
       connectTimeout = r.connectTimeout,
       proxy = r.proxy,
+      proxyAuth = r.proxyAuth,
       cert = r.cert,
       sslContext = r.sslContext,
       cookies = r.cookies,
