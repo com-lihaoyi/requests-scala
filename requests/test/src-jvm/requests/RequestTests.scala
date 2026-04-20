@@ -303,9 +303,8 @@ object RequestTests extends HttpbinTestSuite {
      * can compare
      */
     test("compressionData") {
-      import requests.Compress._
       val str = "I am deflater mouse"
-      Seq(None, Gzip, Deflate).foreach { c =>
+      Seq(requests.Compress.None, requests.Compress.Gzip, requests.Compress.Deflate).foreach { c =>
         ServerUtils.usingEchoServer { port =>
           val response =
             requests.post(
@@ -313,7 +312,8 @@ object RequestTests extends HttpbinTestSuite {
               compress = c,
               data = new RequestBlob.ByteSourceRequestBlob(str),
             )
-          assert(str == response.data.toString)
+          val responseData = response.data.toString
+          assert(str == responseData)
         }
       }
     }
@@ -331,4 +331,3 @@ object RequestTests extends HttpbinTestSuite {
     }
   }
 }
-

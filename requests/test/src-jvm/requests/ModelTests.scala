@@ -9,9 +9,9 @@ import utest._
 object ModelTests extends TestSuite {
   val tests = Tests {
     test("multipart file uploads should contain application/octet-stream content type") {
-      val path = getClass.getResource("/license.zip").getPath
-      val file = new File(path)
-      val nioPath = FileSystems.getDefault.getPath(path)
+      val uri = getClass.getResource("/license.zip").toURI
+      val file = new File(uri)
+      val nioPath = java.nio.file.Paths.get(uri)
       val fileKey = "fileKey"
       val fileName = "fileName"
 
