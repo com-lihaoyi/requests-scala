@@ -150,7 +150,7 @@ object RequestTests extends HttpbinTestSuite {
         }
       }
       test("connect") {
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           // use unreachable IP address to test connect timeout (more reliable than remote httpbin.org)
           requests.get("http://10.255.255.1:12345/", connectTimeout = 1)
         }
@@ -331,4 +331,3 @@ object RequestTests extends HttpbinTestSuite {
     }
   }
 }
-
