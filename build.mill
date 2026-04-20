@@ -4,6 +4,13 @@
 //| - com.github.lolgab::mill-mima_mill1:0.2.0
 package build
 
+import java.io.FileOutputStream
+import java.math.BigInteger
+import java.security.MessageDigest
+
+import scala.util.Properties
+import _root_.{requests as req}
+
 import mill._
 import scalalib._
 import scalanativelib._
@@ -57,7 +64,7 @@ trait RequestsTestModule extends TestModule.Utest {
   def mvnDeps = Seq(
     mvn"com.lihaoyi::utest::0.9.5",
     mvn"com.lihaoyi::ujson::4.4.3",
-    mvn"com.dimafeng::testcontainers-scala-core:0.44.1"
+    mvn"com.lihaoyi::os-lib:0.11.8",
   )
 
   def forkArgs = Seq(
@@ -66,9 +73,66 @@ trait RequestsTestModule extends TestModule.Utest {
 }
 
 object requests extends Module {
+  def goHttpBinVersion = "2.22.1"
+
+  def httpbinArtifact = Task {
+    val destDir = Task.dest
+    def calcChecksum(path: os.Path): String = {
+      val digest = MessageDigest.getInstance("SHA-256")
+      val hash = digest.digest(path.getInputStream.readAllBytes())
+      new BigInteger(1, hash).toString(16)
+    }
+
+    val platfrom =
+      if Properties.isLinux then "linux"
+      else if Properties.isWin then "windows"
+      else if Properties.isMac then "darwin"
+      else sys.error(s"Unsupported platform ${Properties.osName}")
+    val arch =
+      if Properties.isMac
+      then
+        "all"
+      else
+        System.getProperty("os.arch") match
+          case "aarch64" => "arm64"
+          case "x86_64" => "amd64"
+          case "amd64" => "amd64"
+          case other => sys.error(s"Unsupported architecture: ${other}")
+    val prefix = s"https://github.com/mccutchen/go-httpbin/releases/download/v${goHttpBinVersion}"
+    val checksumUrl = s"${prefix}/checksums.txt"
+    val archiveName = s"go-httpbin-${platfrom}-${arch}.tar.gz"
+    val archiveUrl = s"${prefix}/${archiveName}"
+    val archivePath = destDir / "go-httpbin.tar.gz"
+    val checksum = req.get(checksumUrl).lines()
+      .find(_.endsWith(archiveName))
+      .flatMap(_.split(" ").headOption)
+      .getOrElse(sys.error(s"Could not find checksum for ${archiveName}"))
+
+    val isDownload =
+      if !os.exists(archivePath)
+      then true
+      else calcChecksum(archivePath) != checksum
+    if (isDownload) {
+      req.get.stream(archiveUrl).writeBytesTo(new FileOutputStream(archivePath.toString))
+      val localChecksum = calcChecksum(archivePath)
+      if (localChecksum != checksum)
+        sys.error(s"Checksum (${localChecksum}) of downloaded archive (${archiveUrl}) does not match expected ${checksum}")
+    }
+    os.proc("tar", "xzf", archivePath, "-C", destDir).call()
+
+    val targetExecBin = destDir / "go-httpbin"
+    if (!os.exists(targetExecBin) || !os.isExecutable(targetExecBin))
+      sys.error(s"Expected to find executable `go-httpbin` in ${destDir}, but it was not.")
+    PathRef(targetExecBin)
+  }
+
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
   trait RequestsJvmModule extends RequestsCrossScalaModule {
-    object test extends ScalaTests with RequestsTestModule
+    object test extends ScalaTests with RequestsTestModule {
+      def forkEnv = super.forkEnv() ++ Map(
+          "GO_HTTPBIN_EXE" -> httpbinArtifact().path.toString
+      )
+    }
   }
 
   // // Scala Native is only supported for Scala 3
