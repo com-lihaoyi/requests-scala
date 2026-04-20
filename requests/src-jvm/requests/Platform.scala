@@ -1,0 +1,323 @@
+package requests
+
+import java.io._
+import java.net.HttpCookie
+import java.net.http._
+import java.time.Duration
+import java.util.concurrent.{ExecutorService, Executors, ThreadFactory}
+import java.net.{InetSocketAddress, ProxySelector}
+import java.util.zip.{GZIPInputStream, InflaterInputStream}
+import javax.net.ssl.SSLContext
+import scala.collection.JavaConverters._
+import scala.collection.immutable.ListMap
+
+private[requests] object Platform {
+  def buildHttpClient(
+    proxy: (String, Int),
+    cert: Cert,
+    sslContext: SSLContext,
+    verifySslCerts: Boolean,
+    connectTimeout: Int,
+    executor: ExecutorService
+  ): HttpClient = {
+    val builder = HttpClient
+      .newBuilder()
+      .executor(executor)
+      .followRedirects(HttpClient.Redirect.NEVER)
+      .proxy(proxy match {
+        case null       => ProxySelector.getDefault
+        case (ip, port) => ProxySelector.of(new InetSocketAddress(ip, port))
+      })
+      .sslContext(
+        if (cert != null)
+          Util.clientCertSSLContext(cert, verifySslCerts)
+        else if (sslContext != null)
+          sslContext
+        else if (!verifySslCerts)
+          Util.noVerifySSLContext
+        else
+          SSLContext.getDefault,
+      )
+      .connectTimeout(Duration.ofMillis(connectTimeout))
+
+    builder.build()
+  }
+
+  def closeHttpClient(httpClient: HttpClient): Unit = {
+    try {
+      val closeMethod = classOf[HttpClient].getMethod("close")
+      closeMethod.invoke(httpClient)
+    } catch {
+      case _: NoSuchMethodException =>
+        try {
+          val facadeClass = httpClient.getClass
+          val implField = facadeClass.getDeclaredField("impl")
+          implField.setAccessible(true)
+          val impl = implField.get(httpClient)
+          val selectorManagerField = impl.getClass.getDeclaredField("selmgr")
+          selectorManagerField.setAccessible(true)
+          val selectorManager = selectorManagerField.get(impl)
+          val selectorField = selectorManager.getClass.getDeclaredField("selector")
+          selectorField.setAccessible(true)
+          val selector = selectorField.get(selectorManager)
+          val closeMethod = selector.getClass.getMethod("close")
+          closeMethod.invoke(selector)
+        } catch {
+          case _: Exception =>
+            System.err.println(
+              "requests: Unable to close HttpClient SelectorManager thread. " +
+              "To fix thread leaks on Java <21, add JVM arg: " +
+              "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
+            )
+        }
+    }
+  }
+
+  def makeRequest[T](
+      sess: BaseSession,
+      url: String,
+      verb: String,
+      auth: RequestAuth,
+      params: Iterable[(String, String)],
+      blobHeaders: Iterable[(String, String)],
+      headers: Iterable[(String, String)],
+      data: RequestBlob,
+      readTimeout: Int,
+      connectTimeout: Int,
+      proxy: (String, Int),
+      cert: Cert,
+      sslContext: SSLContext,
+      cookies: Map[String, HttpCookie],
+      cookieValues: Map[String, String],
+      maxRedirects: Int,
+      verifySslCerts: Boolean,
+      autoDecompress: Boolean,
+      compress: Compress,
+      keepAlive: Boolean,
+      check: Boolean,
+      chunkedUpload: Boolean,
+      redirectedFrom: Option[Response],
+      onHeadersReceived: StreamHeaders => Unit,
+      f: java.io.InputStream => T,
+      streamRecurse: (String, Option[Response]) => T,
+  ): T = {
+    val url0 = new java.net.URL(url)
+
+    val url1 = if (params.nonEmpty) {
+      val encodedParams = Util.urlEncode(params)
+      val firstSep = if (url0.getQuery != null) "&" else "?"
+      new java.net.URL(url + firstSep + encodedParams)
+    } else url0
+
+    // Check if we can reuse the session's shared HttpClient
+    val useSharedClient =
+      proxy == sess.proxy &&
+      cert == sess.cert &&
+      sslContext == sess.sslContext &&
+      verifySslCerts == sess.verifySslCerts &&
+      connectTimeout == sess.connectTimeout
+
+    val httpClient: HttpClient =
+      if (useSharedClient) sess.sharedHttpClient.asInstanceOf[HttpClient]
+      else buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, sess.executor)
+
+    try {
+
+      val sessionCookieValues = for {
+        c <- (sess.cookies ++ cookies).valuesIterator
+        if !c.hasExpired
+        if c.getDomain == null || c.getDomain == url1.getHost
+        if c.getPath == null || url1.getPath.startsWith(c.getPath)
+      } yield (c.getName, c.getValue)
+
+      val allCookies = sessionCookieValues ++ cookieValues
+
+      val (contentLengthHeader, otherBlobHeaders) =
+        blobHeaders.partition(_._1.equalsIgnoreCase("Content-Length"))
+
+      val allHeaders =
+        otherBlobHeaders ++
+          sess.headers ++
+          headers ++
+          compress.headers ++
+          auth.header.map("Authorization" -> _) ++
+          (if (allCookies.isEmpty) None
+           else
+             Some(
+               "Cookie" -> allCookies
+                 .map { case (k, v) => s"""$k="$v"""" }
+                 .mkString("; "),
+             ))
+      val lastOfEachHeader =
+        allHeaders.foldLeft(ListMap.empty[String, (String, String)]) {
+          case (acc, (k, v)) =>
+            acc.updated(k.toLowerCase, k -> v)
+        }
+      val headersKeyValueAlternating = lastOfEachHeader.values.toList.flatMap {
+        case (k, v) => Seq(k, v)
+      }
+
+      // Buffer the request body
+      val requestBodyBuffer = new ByteArrayOutputStream()
+      usingOutputStream(compress.wrap(requestBodyBuffer)) { os => data.write(os) }
+      val requestBodyBytes = requestBodyBuffer.toByteArray
+
+      val bodyPublisher: HttpRequest.BodyPublisher =
+        if (requestBodyBytes.isEmpty) HttpRequest.BodyPublishers.noBody()
+        else HttpRequest.BodyPublishers.ofByteArray(requestBodyBytes)
+
+      val requestBuilder =
+        HttpRequest
+          .newBuilder()
+          .uri(url1.toURI)
+          .timeout(Duration.ofMillis(readTimeout))
+          .headers(headersKeyValueAlternating: _*)
+          .method(verb.toUpperCase, bodyPublisher)
+
+      def wrapError: PartialFunction[Throwable, Nothing] = {
+        case e: javax.net.ssl.SSLException => throw new InvalidCertException(url, e)
+        case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
+          throw new TimeoutException(url, readTimeout, connectTimeout)
+        case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
+        case e: java.nio.channels.UnresolvedAddressException => throw new UnknownHostException(url, e.getMessage)
+        case e: java.security.cert.CertificateException => throw new InvalidCertException(url, e)
+        case e: java.security.cert.CertPathValidatorException=> throw new InvalidCertException(url, e)
+      }
+
+      val response =
+        try httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
+        catch {
+          case e: Throwable =>
+            wrapError.lift(e)
+              // Sometimes the error we care about is wrapped in an IOException
+              // so check inside to see if there's something we want to handle
+              .orElse(wrapError.lift(e.getCause))
+              .orElse(Option(e.getCause).flatMap(c => wrapError.lift(c.getCause)))
+              .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
+        }
+
+      val responseCode = response.statusCode()
+      val headerFields =
+        response
+          .headers()
+          .map
+          .asScala
+          .filter(_._1 != null)
+          .map { case (k, v) => (k.toLowerCase(), v.asScala.toList) }
+          .toMap
+
+      val deGzip = autoDecompress && headerFields
+        .get("content-encoding")
+        .toSeq
+        .flatten
+        .exists(_.contains("gzip"))
+      val deDeflate =
+        autoDecompress && headerFields
+          .get("content-encoding")
+          .toSeq
+          .flatten
+          .exists(_.contains("deflate"))
+      def persistCookies() = {
+        if (sess.persistCookies) sess.cookies.synchronized {
+          headerFields
+            .get("set-cookie")
+            .iterator
+            .flatten
+            .flatMap(HttpCookie.parse(_).asScala)
+            .foreach(c => sess.cookies(c.getName) = c)
+        }
+      }
+
+      if (
+        responseCode.toString.startsWith("3") &&
+        responseCode.toString != "304" &&
+        maxRedirects > 0
+      ) {
+        val out = new ByteArrayOutputStream()
+        Util.transferTo(response.body, out)
+        val bytes = out.toByteArray
+
+        val current = Response(
+          url = url,
+          statusCode = responseCode,
+          statusMessage = StatusMessages.byStatusCode.getOrElse(responseCode, ""),
+          data = new geny.Bytes(bytes),
+          headers = headerFields,
+          history = redirectedFrom,
+        )
+        persistCookies()
+        val newUrl = current.headers("location").head
+        streamRecurse(new java.net.URL(url1, newUrl).toString, Some(current))
+      } else {
+        persistCookies()
+        val streamHeaders = StreamHeaders(
+          url = url,
+          statusCode = responseCode,
+          statusMessage = StatusMessages.byStatusCode.getOrElse(responseCode, ""),
+          headers = headerFields,
+          history = redirectedFrom,
+        )
+        if (onHeadersReceived != null) onHeadersReceived(streamHeaders)
+
+        val stream = response.body()
+
+        def processWrappedStream[V](f: java.io.InputStream => V): V = {
+          // The HEAD method is identical to GET except that the server
+          // MUST NOT return a message-body in the response.
+          // https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html section 9.4
+          if (verb.toUpperCase == "HEAD") f(new ByteArrayInputStream(Array()))
+          else if (stream != null) {
+            try
+              f(
+                if (deGzip) new GZIPInputStream(stream)
+                else if (deDeflate) new InflaterInputStream(stream)
+                else stream,
+              )
+            finally if (!keepAlive) stream.close()
+          } else {
+            f(new ByteArrayInputStream(Array()))
+          }
+        }
+
+        if (streamHeaders.statusCode == 304 || streamHeaders.is2xx || !check)
+          processWrappedStream(f)
+        else {
+          val errorOutput = new ByteArrayOutputStream()
+          processWrappedStream(geny.Internal.transfer(_, errorOutput))
+          throw new RequestFailedException(
+            Response(
+              url = streamHeaders.url,
+              statusCode = streamHeaders.statusCode,
+              statusMessage = streamHeaders.statusMessage,
+              data = new geny.Bytes(errorOutput.toByteArray),
+              headers = streamHeaders.headers,
+              history = streamHeaders.history,
+            ),
+          )
+        }
+      }
+    } finally {
+      // Only clean up if we created a temporary HttpClient (not using shared)
+      if (!useSharedClient) {
+        closeHttpClient(httpClient)
+      }
+    }
+  }
+
+  private def usingOutputStream[T](os: java.io.OutputStream)(
+      fn: java.io.OutputStream => T,
+  ): Unit =
+    try fn(os)
+    finally os.close()
+
+  def createExecutor(): ExecutorService = {
+    Executors.newCachedThreadPool(new ThreadFactory {
+      override def newThread(r: Runnable): Thread = {
+        val t = new Thread(r, "requests-scala-http")
+        t.setDaemon(true)
+        t
+      }
+    })
+  }
+}
+

@@ -1,8 +1,8 @@
 package requests
 import java.net.HttpCookie
-
+import java.net.http.HttpClient
+import java.util.concurrent.ExecutorService
 import javax.net.ssl.SSLContext
-
 import scala.collection.mutable
 
 /**
@@ -47,4 +47,14 @@ case class Session(
     check: Boolean = true,
 ) extends BaseSession {
   for ((k, v) <- cookieValues) cookies(k) = new HttpCookie(k, v)
+
+  lazy val executor: ExecutorService = Platform.createExecutor()
+  lazy val sharedHttpClient: HttpClient = Platform.buildHttpClient(
+    proxy, cert, sslContext, verifySslCerts, connectTimeout, executor
+  )
+
+  def close(): Unit = {
+    Platform.closeHttpClient(sharedHttpClient)
+    executor.shutdown()
+  }
 }

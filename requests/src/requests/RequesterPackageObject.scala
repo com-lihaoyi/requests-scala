@@ -1,10 +1,10 @@
+package requests
+
 import java.net.HttpCookie
-
 import javax.net.ssl.SSLContext
-
 import scala.collection.mutable
 
-package object requests extends _root_.requests.BaseSession {
+trait RequesterPackageObject extends BaseSession {
   def cookies = mutable.Map.empty[String, HttpCookie]
 
   val headers = BaseSession.defaultHeaders
