@@ -41,7 +41,7 @@ object Scala2RequestTests extends HttpbinTestSuite {
             data = Map("hello" -> "world", "foo" -> "baz"),
             chunkedUpload = true,
           )
-          .text
+          .text()
 
         assert(read(res1).obj("form") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
       }
