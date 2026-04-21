@@ -1,7 +1,7 @@
 //| mill-version: 1.1.5
-//| mill-jvm-version: 11
+//| mill-jvm-version: 17
 //| mvnDeps:
-//| - com.github.lolgab::mill-mima_mill1:0.2.0
+//| - com.github.lolgab::mill-mima_mill1:0.2.1
 package build
 
 import java.io.FileOutputStream
