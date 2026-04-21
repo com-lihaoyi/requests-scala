@@ -32,14 +32,21 @@ object RequestTests extends HttpbinTestSuite {
         // All in URL
         val res1 =
           requests.get(s"http://$localHttpbin/get?hello=world&foo=baz").text()
-        assert(read(res1).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res1).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
+
+        // Multiple values for same key
+        val res11 =
+          requests.get(s"http://$localHttpbin/get?hello=world&foo=baz&foo=qux").text()
+        assert(
+          read(res11).obj("args") == Obj("foo" -> Arr("baz", "qux"), "hello" -> Arr("world")),
+        )
 
         // All in params
         val res2 = requests.get(
           s"http://$localHttpbin/get",
           params = Map("hello" -> "world", "foo" -> "baz"),
         )
-        assert(read(res2).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res2).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
 
         // Mixed URL and params
         val res3 = requests
@@ -48,14 +55,14 @@ object RequestTests extends HttpbinTestSuite {
             params = Map("foo" -> "baz"),
           )
           .text()
-        assert(read(res3).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res3).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
 
         // Needs escaping
         val res4 = requests.get(
           s"http://$localHttpbin/get?hello=world",
           params = Map("++-- lol" -> " !@#$%"),
         )
-        assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
+        assert(read(res4).obj("args") == Obj("++-- lol" -> Arr(" !@#$%"), "hello" -> Arr("world")))
       }
     }
 
@@ -72,8 +79,8 @@ object RequestTests extends HttpbinTestSuite {
           )
           .text()
 
-        assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
-        assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
+        assert(read(response).obj("files") == Obj("file1" -> Arr("Hello!")))
+        assert(read(response).obj("form") == Obj("file2" -> Arr("Goodbye!")))
       }
     }
 
@@ -174,10 +181,10 @@ object RequestTests extends HttpbinTestSuite {
 
     test("decompress") {
       val res1 = requests.get(s"http://$localHttpbin/gzip")
-      assert(read(res1.text()).obj("headers").obj("Host").str == localHttpbin)
+      assert(read(res1.text()).obj("headers").obj("Host")(0).str == localHttpbin)
 
       val res2 = requests.get(s"http://$localHttpbin/deflate")
-      assert(read(res2).obj("headers").obj("Host").str == localHttpbin)
+      assert(read(res2).obj("headers").obj("Host")(0).str == localHttpbin)
 
       val res3 = requests.get(s"http://$localHttpbin/gzip", autoDecompress = false)
       assert(res3.bytes.length < res1.bytes.length)
@@ -203,23 +210,25 @@ object RequestTests extends HttpbinTestSuite {
 
       val res2 = requests.post(
         s"http://$localHttpbin/post",
+        headers = Map("Content-Type" -> "application/octet-stream"),
         compress = requests.Compress.Gzip,
         data = new RequestBlob.ByteSourceRequestBlob("I am cow"),
       )
       assert(
-        read(new String(res2.bytes))("data").toString
+        read(res2.text())("data")
+          .toString()
           .contains("data:application/octet-stream;base64,H4sIAAAAAA"),
       )
 
       val res3 = requests.post(
         s"http://$localHttpbin/post",
+        headers = Map("Content-Type" -> "application/octet-stream"),
         compress = requests.Compress.Deflate,
         data = new RequestBlob.ByteSourceRequestBlob("Hear me moo"),
       )
       assert(
-        read(new String(res3.bytes))(
-          "data",
-        ).toString == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""",
+        read(res3.text())("data").toString()
+          == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""",
       )
     }
 
@@ -227,9 +236,9 @@ object RequestTests extends HttpbinTestSuite {
       test("default") {
         val res = requests.get(s"http://$localHttpbin/headers").text()
         val hs = read(res)("headers").obj
-        assert(hs("User-Agent").str == "requests-scala")
-        assert(hs("Accept-Encoding").str == "gzip, deflate")
-        assert(hs("Accept").str == "*/*")
+        assert(hs("User-Agent") == Arr("requests-scala"))
+        assert(hs("Accept-Encoding") == Arr("gzip, deflate"))
+        assert(hs("Accept") == Arr("*/*"))
         test("hasNoCookie") {
           assert(!hs.contains("Cookie"))
         }
@@ -327,7 +336,7 @@ object RequestTests extends HttpbinTestSuite {
         headers = Seq("x-y" -> "a", "x-y" -> "b"),
       )
       // make sure it's not "a,b"
-      assert(ujson.read(res)("headers")("X-Y") == Str("b"))
+      assert(ujson.read(res)("headers")("X-Y") == Arr("b"))
     }
   }
 }
