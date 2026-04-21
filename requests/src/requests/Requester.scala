@@ -51,17 +51,12 @@ trait BaseSession extends AutoCloseable {
     }
   })
   lazy val sharedHttpClient: HttpClient = BaseSession.buildHttpClient(
-    proxy,
-    cert,
-    sslContext,
-    verifySslCerts,
-    connectTimeout,
-    executor,
+    proxy, cert, sslContext, verifySslCerts, connectTimeout, executor
   )
 
   /**
-   * Closes the shared HttpClient and its executor. Call this when you're done with the session to
-   * release resources and prevent thread leaks.
+   * Closes the shared HttpClient and its executor. Call this when you're done
+   * with the session to release resources and prevent thread leaks.
    */
   def close(): Unit = {
     BaseSession.closeHttpClient(sharedHttpClient)
@@ -77,12 +72,12 @@ object BaseSession {
   )
 
   def buildHttpClient(
-      proxy: (String, Int),
-      cert: Cert,
-      sslContext: SSLContext,
-      verifySslCerts: Boolean,
-      connectTimeout: Int,
-      executor: ExecutorService,
+    proxy: (String, Int),
+    cert: Cert,
+    sslContext: SSLContext,
+    verifySslCerts: Boolean,
+    connectTimeout: Int,
+    executor: ExecutorService
   ): HttpClient = {
     val builder = HttpClient
       .newBuilder()
@@ -108,8 +103,8 @@ object BaseSession {
   }
 
   /**
-   * Closes an HttpClient, using reflection to handle both Java 21+ (which has close()) and earlier
-   * versions (which require accessing internal selector).
+   * Closes an HttpClient, using reflection to handle both Java 21+ (which has close())
+   * and earlier versions (which require accessing internal selector).
    */
   def closeHttpClient(httpClient: HttpClient): Unit = {
     try {
@@ -137,8 +132,8 @@ object BaseSession {
           case _: Exception =>
             System.err.println(
               "requests: Unable to close HttpClient SelectorManager thread. " +
-                "To fix thread leaks on Java <21, add JVM arg: " +
-                "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED",
+              "To fix thread leaks on Java <21, add JVM arg: " +
+              "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
             )
         }
     }
@@ -306,22 +301,14 @@ case class Requester(verb: String, sess: BaseSession) {
       // Check if we can reuse the session's shared HttpClient
       val useSharedClient =
         proxy == sess.proxy &&
-          cert == sess.cert &&
-          sslContext == sess.sslContext &&
-          verifySslCerts == sess.verifySslCerts &&
-          connectTimeout == sess.connectTimeout
+        cert == sess.cert &&
+        sslContext == sess.sslContext &&
+        verifySslCerts == sess.verifySslCerts &&
+        connectTimeout == sess.connectTimeout
 
       val httpClient: HttpClient =
         if (useSharedClient) sess.sharedHttpClient
-        else
-          BaseSession.buildHttpClient(
-            proxy,
-            cert,
-            sslContext,
-            verifySslCerts,
-            connectTimeout,
-            sess.executor,
-          )
+        else BaseSession.buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, sess.executor)
 
       try {
 
@@ -381,21 +368,18 @@ case class Requester(verb: String, sess: BaseSession) {
           case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
             throw new TimeoutException(url, readTimeout, connectTimeout)
           case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
-          case e: java.nio.channels.UnresolvedAddressException =>
-            throw new UnknownHostException(url, e.getMessage)
+          case e: java.nio.channels.UnresolvedAddressException => throw new UnknownHostException(url, e.getMessage)
           case e: java.security.cert.CertificateException => throw new InvalidCertException(url, e)
-          case e: java.security.cert.CertPathValidatorException =>
-            throw new InvalidCertException(url, e)
+          case e: java.security.cert.CertPathValidatorException=> throw new InvalidCertException(url, e)
         }
 
         val response =
           try httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream())
           catch {
             case e: Throwable =>
-              // Sometimes the error we care about is wrapped in an IOException
-              // so check inside to see if there's something we want to handle
-              wrapError
-                .lift(e)
+              wrapError.lift(e)
+                // Sometimes the error we care about is wrapped in an IOException
+                // so check inside to see if there's something we want to handle
                 .orElse(wrapError.lift(e.getCause))
                 .orElse(Option(e.getCause).flatMap(c => wrapError.lift(c.getCause)))
                 .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
