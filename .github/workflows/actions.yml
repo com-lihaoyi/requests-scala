@@ -12,22 +12,46 @@ on:
   workflow_dispatch: # be able to manually trigger a workflow run
 
 env:
-  SCALA_NEXT_VERSION: '3.6.2'
+  SCALA_NEXT_VERSION: '3.8.3'
   # TODO: perherps, it would be nice to allow failure on `SCALA_NEXT_VERSION` as a warning
   #       to avoid too strict dev experiences in the future improvements.
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: ['11', '17', '21']
+        java: ['11', '17', '21', '25']
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
         run: |
           sed -i 's#//| mill-jvm-version: 11#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
           ./mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
+
+  test-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        java: ['25']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          sed -i 's#//| mill-jvm-version: 11#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
+          ./mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
+
+  test-windows:
+    needs: [test-linux, test-macos]
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        java: ['11'] # Please match to `mill-jvm-version` in build.mill for Windows
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          .\mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
 
   check-binary-compatibility:
     runs-on: ubuntu-latest
@@ -40,7 +64,7 @@ jobs:
 
   publish-sonatype:
     if: github.repository == 'com-lihaoyi/requests-scala' && contains(github.ref, 'refs/tags/')
-    needs: test
+    needs: test-linux
     runs-on: ubuntu-latest
     env:
       MILL_SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
