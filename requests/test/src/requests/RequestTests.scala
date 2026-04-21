@@ -300,7 +300,7 @@ object RequestTests extends HttpbinTestSuite {
     }
 
     test("gzipError") {
-      val response = requests.head("https://api.github.com/users/lihaoyi")
+      val response = requests.head("https://www.apple.com")
       assert(response.statusCode == 200)
       assert(response.data.array.isEmpty)
       assert(response.headers.keySet.map(_.toLowerCase).contains("content-length"))
