@@ -12,7 +12,7 @@ on:
   workflow_dispatch: # be able to manually trigger a workflow run
 
 env:
-  SCALA_NEXT_VERSION: '3.6.2'
+  SCALA_NEXT_VERSION: '3.7.4'
   # TODO: perherps, it would be nice to allow failure on `SCALA_NEXT_VERSION` as a warning
   #       to avoid too strict dev experiences in the future improvements.
 
