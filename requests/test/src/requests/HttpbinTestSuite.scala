@@ -1,6 +1,7 @@
 package requests
 
-import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.{ThreadLocalRandom, Phaser}
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.BindException
 
 import utest.TestSuite
@@ -14,25 +15,45 @@ abstract class HttpbinTestSuite extends TestSuite {
 
   private val httpbinProcess =
     try {
+      val phaser = new Phaser(1)
+      @volatile var portNotAvailable = false
       val process =
-        os.proc(httpbinPath, "-host", host, "--port", port, "-log-level", "ERROR").spawn()
+        os.proc(httpbinPath, "-host", host, "--port", port, "-log-level", "ERROR")
+          .spawn(
+            stderr = os.ProcessOutput.Readlines(lines => {
+              if (lines.contains("bind: address already in use"))
+                portNotAvailable = true
+              System.err.println("[httpbin stderr] " + lines)
+              if (!phaser.isTerminated()) phaser.arrive()
+            }),
+          )
       if (process.waitFor(500L)) {
-        if (process.stderr.lines().mkString.contains("address already in use"))
+        phaser.awaitAdvanceInterruptibly(0, 1000L, MILLISECONDS)
+        phaser.forceTermination()
+        if (portNotAvailable)
           throw new BindException("Port is already in use")
         else
-          throw new IllegalThreadStateException("`httpbin` process failed to start")
+          throw new IllegalStateException("`httpbin` process failed to start")
+      } else {
+        phaser.forceTermination()
       }
       process
     } catch {
       case exc: BindException => {
         port = ThreadLocalRandom.current().nextInt(10000, 65535).toString()
-        os.proc(httpbinPath, "-host", "127.0.0.1", "--port", port).spawn()
+        val retriedProc =
+          os.proc(httpbinPath, "-host", "127.0.0.1", "--port", port, "-log-level", "ERROR").spawn()
+        if (retriedProc.waitFor(500L)) {
+          throw new IllegalStateException("`httpbin` process failed to start")
+        }
+        retriedProc
       }
+
     }
 
   val localHttpbin: String = s"${host}:${port}"
 
   override def utestAfterAll(): Unit = {
-    httpbinProcess.destroy()
+    if (httpbinProcess.isAlive()) httpbinProcess.destroy()
   }
 }
