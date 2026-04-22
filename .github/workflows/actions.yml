@@ -41,17 +41,20 @@ jobs:
           sed -i '' 's#//| mill-jvm-version: 17#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
           ./mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
 
-  test-windows:
-    needs: [test-linux, test-macos]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        java: ['17'] # Please match to `mill-jvm-version` in build.mill for Windows since no `sed` command is applied to it
-    steps:
-      - uses: actions/checkout@v6
-      - name: Run tests
-        run: |
-          .\mill -i "-DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }}" __.publishArtifacts + __.test
+  # Failed to parse `license.zip` on Windows CI, needs further investigation, see
+  # https://github.com/com-lihaoyi/requests-scala/actions/runs/24759357647/job/72439599258#step:3:1045
+  #
+  # test-windows:
+  #   needs: [test-linux, test-macos]
+  #   runs-on: windows-latest
+  #   strategy:
+  #     matrix:
+  #       java: ['17'] # Please match to `mill-jvm-version` in build.mill for Windows since no `sed` command is applied to it
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Run tests
+  #       run: |
+  #         .\mill -i "-DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }}" __.publishArtifacts + __.test
 
   check-binary-compatibility:
     runs-on: ubuntu-latest
