@@ -84,13 +84,12 @@ object requests extends Module {
     }
 
     val platfrom =
-      if Properties.isLinux then "linux"
-      else if Properties.isWin then "windows"
-      else if Properties.isMac then "darwin"
+      if (Properties.isLinux) "linux"
+      else if (Properties.isWin) "windows"
+      else if (Properties.isMac) "darwin"
       else sys.error(s"Unsupported platform ${Properties.osName}")
     val arch =
-      if Properties.isMac
-      then
+      if (Properties.isMac)
         "all"
       else
         System.getProperty("os.arch") match
@@ -98,19 +97,19 @@ object requests extends Module {
           case "x86_64" => "amd64"
           case "amd64" => "amd64"
           case other => sys.error(s"Unsupported architecture: ${other}")
+    val ext = if (Properties.isWin) "zip" else "tar.gz"
     val prefix = s"https://github.com/mccutchen/go-httpbin/releases/download/v${goHttpBinVersion}"
     val checksumUrl = s"${prefix}/checksums.txt"
-    val archiveName = s"go-httpbin-${platfrom}-${arch}.tar.gz"
+    val archiveName = s"go-httpbin-${platfrom}-${arch}.${ext}"
     val archiveUrl = s"${prefix}/${archiveName}"
-    val archivePath = destDir / "go-httpbin.tar.gz"
+    val archivePath = destDir / s"go-httpbin.${ext}"
     val checksum = req.get(checksumUrl).lines()
       .find(_.endsWith(archiveName))
       .flatMap(_.split(" ").headOption)
       .getOrElse(sys.error(s"Could not find checksum for ${archiveName}"))
 
     val isDownload =
-      if !os.exists(archivePath)
-      then true
+      if (!os.exists(archivePath)) true
       else calcChecksum(archivePath) != checksum
     if (isDownload) {
       req.get.stream(archiveUrl).writeBytesTo(new FileOutputStream(archivePath.toString))
@@ -118,9 +117,13 @@ object requests extends Module {
       if (localChecksum != checksum)
         sys.error(s"Checksum (${localChecksum}) of downloaded archive (${archiveUrl}) does not match expected ${checksum}")
     }
-    os.proc("tar", "xzf", archivePath, "-C", destDir).call()
+    if (Properties.isWin) {
+      os.proc("unzip", archivePath, "-d", destDir).call()
+    } else {
+      os.proc("tar", "xzf", archivePath, "-C", destDir).call()
+    }
 
-    val targetExecBin = destDir / "go-httpbin"
+    val targetExecBin = destDir / (if (Properties.isWin) "go-httpbin.exe" else "go-httpbin")
     if (!os.exists(targetExecBin) || !os.isExecutable(targetExecBin))
       sys.error(s"Expected to find executable `go-httpbin` in ${destDir}, but it was not.")
     PathRef(targetExecBin)
