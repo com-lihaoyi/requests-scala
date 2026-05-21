@@ -64,7 +64,7 @@ trait RequestsTestModule extends TestModule.Utest {
   def mvnDeps = Seq(
     mvn"com.lihaoyi::utest::0.9.5",
     mvn"com.lihaoyi::ujson::4.4.3",
-    mvn"com.lihaoyi::os-lib:0.11.8",
+    mvn"com.lihaoyi::os-lib::0.11.8",
   )
 
   def forkArgs = Seq(
