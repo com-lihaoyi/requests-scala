@@ -24,6 +24,7 @@ val scalaNextVersion = sys.props.get("scalaNextVersion").toList
 val scalaVersions = List("2.12.20", "2.13.15", "3.3.7") ++ scalaNextVersion ++ communityBuildDottyVersion
 val scala3Versions = scalaVersions.filter(_.startsWith("3"))
 val scalaNativeVer = "0.5.10"
+val goHttpBinVersion = "2.22.1"
 
 trait MimaCheck extends Mima {
   def mimaPreviousVersions = Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0", "0.9.3").distinct
@@ -70,10 +71,10 @@ trait RequestsTestModule extends TestModule.Utest {
   def forkArgs = Seq(
     "--add-opens", "java.net.http/jdk.internal.net.http=ALL-UNNAMED"
   )
-}
 
-object requests extends Module {
-  def goHttpBinVersion = "2.22.1"
+  def forkEnv = super.forkEnv() ++ Map(
+    "GO_HTTPBIN_EXE" -> httpbinArtifact().path.toString()
+  )
 
   def httpbinArtifact = Task {
     val destDir = Task.dest
@@ -99,11 +100,13 @@ object requests extends Module {
           case other => sys.error(s"Unsupported architecture: ${other}")
     val ext = if (Properties.isWin) "zip" else "tar.gz"
     val prefix = s"https://github.com/mccutchen/go-httpbin/releases/download/v${goHttpBinVersion}"
-    val checksumUrl = s"${prefix}/checksums.txt"
+
     val archiveName = s"go-httpbin-${platfrom}-${arch}.${ext}"
     val archiveUrl = s"${prefix}/${archiveName}"
+    val archiveChecksumUrl = s"${prefix}/checksums.txt"
     val archivePath = destDir / s"go-httpbin.${ext}"
-    val checksum = req.get(checksumUrl).lines()
+
+    val checksum = req.get(archiveChecksumUrl).lines()
       .find(_.endsWith(archiveName))
       .flatMap(_.split(" ").headOption)
       .getOrElse(sys.error(s"Could not find checksum for ${archiveName}"))
@@ -128,14 +131,12 @@ object requests extends Module {
       sys.error(s"Expected to find executable `go-httpbin` in ${destDir}, but it was not.")
     PathRef(targetExecBin)
   }
+}
 
+object requests extends Module {
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
   trait RequestsJvmModule extends RequestsCrossScalaModule {
-    object test extends ScalaTests with RequestsTestModule {
-      def forkEnv = super.forkEnv() ++ Map(
-        "GO_HTTPBIN_EXE" -> httpbinArtifact().path.toString()
-      )
-    }
+    object test extends ScalaTests with RequestsTestModul
   }
 
   // // Scala Native is only supported for Scala 3
