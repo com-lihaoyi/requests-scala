@@ -19,7 +19,7 @@ object RequestTests extends HttpbinTestSuite {
             val res = r(s"$baseUrl/${r2.verb.toLowerCase()}")
             assert(res.statusCode == 200)
           } else {
-            intercept[RequestFailedException] {
+            assertThrows[RequestFailedException] {
               r(s"$baseUrl/${r2.verb.toLowerCase()}")
             }
           }
@@ -32,14 +32,21 @@ object RequestTests extends HttpbinTestSuite {
         // All in URL
         val res1 =
           requests.get(s"http://$localHttpbin/get?hello=world&foo=baz").text()
-        assert(read(res1).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res1).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
+
+        // Multiple values for same key
+        val res11 =
+          requests.get(s"http://$localHttpbin/get?hello=world&foo=baz&foo=qux").text()
+        assert(
+          read(res11).obj("args") == Obj("foo" -> Arr("baz", "qux"), "hello" -> Arr("world")),
+        )
 
         // All in params
         val res2 = requests.get(
           s"http://$localHttpbin/get",
           params = Map("hello" -> "world", "foo" -> "baz"),
         )
-        assert(read(res2).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res2).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
 
         // Mixed URL and params
         val res3 = requests
@@ -48,14 +55,14 @@ object RequestTests extends HttpbinTestSuite {
             params = Map("foo" -> "baz"),
           )
           .text()
-        assert(read(res3).obj("args") == Obj("foo" -> "baz", "hello" -> "world"))
+        assert(read(res3).obj("args") == Obj("foo" -> Arr("baz"), "hello" -> Arr("world")))
 
         // Needs escaping
         val res4 = requests.get(
           s"http://$localHttpbin/get?hello=world",
           params = Map("++-- lol" -> " !@#$%"),
         )
-        assert(read(res4).obj("args") == Obj("++-- lol" -> " !@#$%", "hello" -> "world"))
+        assert(read(res4).obj("args") == Obj("++-- lol" -> Arr(" !@#$%"), "hello" -> Arr("world")))
       }
     }
 
@@ -72,8 +79,8 @@ object RequestTests extends HttpbinTestSuite {
           )
           .text()
 
-        assert(read(response).obj("files") == Obj("file1" -> "Hello!"))
-        assert(read(response).obj("form") == Obj("file2" -> "Goodbye!"))
+        assert(read(response).obj("files") == Obj("file1" -> Arr("Hello!")))
+        assert(read(response).obj("form") == Obj("file2" -> Arr("Goodbye!")))
       }
     }
 
@@ -141,16 +148,16 @@ object RequestTests extends HttpbinTestSuite {
 
     test("timeouts") {
       test("read") {
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           requests.get(s"http://$localHttpbin/delay/1", readTimeout = 10)
         }
         requests.get(s"http://$localHttpbin/delay/1", readTimeout = 2000)
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           requests.get(s"http://$localHttpbin/delay/3", readTimeout = 2000)
         }
       }
       test("connect") {
-        intercept[TimeoutException] {
+        assertThrows[TimeoutException] {
           // use unreachable IP address to test connect timeout (more reliable than remote httpbin.org)
           requests.get("http://10.255.255.1:12345/", connectTimeout = 1)
         }
@@ -158,26 +165,26 @@ object RequestTests extends HttpbinTestSuite {
     }
 
     test("failures") {
-      intercept[UnknownHostException] {
+      assertThrows[UnknownHostException] {
         requests.get("https://doesnt-exist-at-all.com/")
       }
-      intercept[InvalidCertException] {
+      assertThrows[InvalidCertException] {
         requests.get("https://expired.badssl.com/")
       }
 
       requests.get("https://expired.badssl.com/", verifySslCerts = false)
 
-      intercept[java.net.MalformedURLException] {
+      assertThrows[java.net.MalformedURLException] {
         requests.get("://doesnt-exist.com/")
       }
     }
 
     test("decompress") {
       val res1 = requests.get(s"http://$localHttpbin/gzip")
-      assert(read(res1.text()).obj("headers").obj("Host").str == localHttpbin)
+      assert(read(res1.text()).obj("headers").obj("Host")(0).str == localHttpbin)
 
       val res2 = requests.get(s"http://$localHttpbin/deflate")
-      assert(read(res2).obj("headers").obj("Host").str == localHttpbin)
+      assert(read(res2).obj("headers").obj("Host")(0).str == localHttpbin)
 
       val res3 = requests.get(s"http://$localHttpbin/gzip", autoDecompress = false)
       assert(res3.bytes.length < res1.bytes.length)
@@ -203,23 +210,25 @@ object RequestTests extends HttpbinTestSuite {
 
       val res2 = requests.post(
         s"http://$localHttpbin/post",
+        headers = Map("Content-Type" -> "application/octet-stream"),
         compress = requests.Compress.Gzip,
         data = new RequestBlob.ByteSourceRequestBlob("I am cow"),
       )
       assert(
-        read(new String(res2.bytes))("data").toString
+        read(res2.text())("data")
+          .toString()
           .contains("data:application/octet-stream;base64,H4sIAAAAAA"),
       )
 
       val res3 = requests.post(
         s"http://$localHttpbin/post",
+        headers = Map("Content-Type" -> "application/octet-stream"),
         compress = requests.Compress.Deflate,
         data = new RequestBlob.ByteSourceRequestBlob("Hear me moo"),
       )
       assert(
-        read(new String(res3.bytes))(
-          "data",
-        ).toString == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""",
+        read(res3.text())("data").toString()
+          == """"data:application/octet-stream;base64,eJzzSE0sUshNVcjNzwcAFokD3g=="""",
       )
     }
 
@@ -227,9 +236,9 @@ object RequestTests extends HttpbinTestSuite {
       test("default") {
         val res = requests.get(s"http://$localHttpbin/headers").text()
         val hs = read(res)("headers").obj
-        assert(hs("User-Agent").str == "requests-scala")
-        assert(hs("Accept-Encoding").str == "gzip, deflate")
-        assert(hs("Accept").str == "*/*")
+        assert(hs("User-Agent") == Arr("requests-scala"))
+        assert(hs("Accept-Encoding") == Arr("gzip, deflate"))
+        assert(hs("Accept") == Arr("*/*"))
         test("hasNoCookie") {
           assert(!hs.contains("Cookie"))
         }
@@ -283,15 +292,12 @@ object RequestTests extends HttpbinTestSuite {
     }
 
     test("selfSignedCertificate") {
-      val res = requests.get(
-        "https://self-signed.badssl.com",
-        verifySslCerts = false,
-      )
+      val res = requests.get("https://self-signed.badssl.com", verifySslCerts = false)
       assert(res.statusCode == 200)
     }
 
     test("gzipError") {
-      val response = requests.head("https://api.github.com/users/lihaoyi")
+      val response = requests.head("https://www.apple.com")
       assert(response.statusCode == 200)
       assert(response.data.array.isEmpty)
       assert(response.headers.keySet.map(_.toLowerCase).contains("content-length"))
@@ -303,9 +309,9 @@ object RequestTests extends HttpbinTestSuite {
      * can compare
      */
     test("compressionData") {
-      import requests.Compress._
+      import requests.Compress
       val str = "I am deflater mouse"
-      Seq(None, Gzip, Deflate).foreach { c =>
+      Seq(Compress.None, Compress.Gzip, Compress.Deflate).foreach { c =>
         ServerUtils.usingEchoServer { port =>
           val response =
             requests.post(
@@ -327,8 +333,7 @@ object RequestTests extends HttpbinTestSuite {
         headers = Seq("x-y" -> "a", "x-y" -> "b"),
       )
       // make sure it's not "a,b"
-      assert(ujson.read(res)("headers")("X-Y") == Str("b"))
+      assert(ujson.read(res)("headers")("X-Y") == Arr("b"))
     }
   }
 }
-

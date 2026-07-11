@@ -1,8 +1,15 @@
-//| mill-version: 1.1.0-RC1
-//| mill-jvm-version: 11
+//| mill-version: 1.1.6
+//| mill-jvm-version: 25
 //| mvnDeps:
-//| - com.github.lolgab::mill-mima_mill1:0.2.0
+//| - com.github.lolgab::mill-mima_mill1:0.2.1
 package build
+
+import java.io.FileOutputStream
+import java.math.BigInteger
+import java.security.MessageDigest
+
+import scala.util.Properties
+import _root_.{requests as req}
 
 import mill._
 import scalalib._
@@ -13,12 +20,14 @@ import mill.util.VcsVersion
 import com.github.lolgab.mill.mima._
 
 val communityBuildDottyVersion = sys.props.get("dottyVersion").toList
-val scalaNextVersion = sys.props.get("scalaNextVersion")
-val scalaVersions = List("2.12.20", "2.13.15", "3.3.4") ++ scalaNextVersion ++ communityBuildDottyVersion
-val scalaNativeVer = "0.5.6"
+val scalaNextVersion = sys.props.get("scalaNextVersion").toList
+val scalaVersions = List("2.12.20", "2.13.15", "3.3.7") ++ scalaNextVersion ++ communityBuildDottyVersion
+val scala3Versions = scalaVersions.filter(_.startsWith("3"))
+val scalaNativeVer = "0.5.10"
+val goHttpBinVersion = "2.22.1"
 
 trait MimaCheck extends Mima {
-   def mimaPreviousVersions = Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0").distinct
+  def mimaPreviousVersions = Seq("0.6.9", "0.7.0", "0.7.1", "0.8.0","0.8.2", "0.9.0", "0.9.3").distinct
 
   override def mimaBinaryIssueFilters = Seq(
     ProblemFilter.exclude[ReversedMissingMethodProblem]("requests.BaseSession.send"),
@@ -45,35 +54,101 @@ trait RequestsPublishModule extends PublishModule with MimaCheck {
   def mvnDeps = Seq(mvn"com.lihaoyi::geny::1.1.1")
 }
 
-trait RequestsCrossScalaModule extends CrossScalaModule with ScalaModule {
+trait RequestsCrossScalaModule
+  extends CrossScalaModule with ScalaModule with RequestsPublishModule {
   def moduleDir = build.moduleDir / "requests"
+
   def sources = Task.Sources("src")
 }
 
 trait RequestsTestModule extends TestModule.Utest {
   def mvnDeps = Seq(
-    mvn"com.lihaoyi::utest::0.7.10",
-    mvn"com.lihaoyi::ujson::1.3.13",
-    mvn"com.dimafeng::testcontainers-scala-core:0.43.0"
+    mvn"com.lihaoyi::utest::0.9.5",
+    mvn"com.lihaoyi::ujson::4.4.3",
+    mvn"com.lihaoyi::os-lib::0.11.8",
   )
+
   def forkArgs = Seq(
     "--add-opens", "java.net.http/jdk.internal.net.http=ALL-UNNAMED"
   )
+
+  def forkEnv = super.forkEnv() ++ Map(
+    "GO_HTTPBIN_EXE" -> httpbinArtifact().path.toString()
+  )
+
+  def httpbinArtifact = Task {
+    val destDir = Task.dest
+    def calcChecksum(path: os.Path): String = {
+      val digest = MessageDigest.getInstance("SHA-256")
+      val hash = digest.digest(path.getInputStream.readAllBytes())
+      new BigInteger(1, hash).toString(16)
+    }
+
+    val platfrom =
+      if (Properties.isLinux) "linux"
+      else if (Properties.isWin) "windows"
+      else if (Properties.isMac) "darwin"
+      else sys.error(s"Unsupported platform ${Properties.osName}")
+    val arch =
+      if (Properties.isMac)
+        "all"
+      else
+        System.getProperty("os.arch") match
+          case "aarch64" => "arm64"
+          case "x86_64" => "amd64"
+          case "amd64" => "amd64"
+          case other => sys.error(s"Unsupported architecture: ${other}")
+    val ext = if (Properties.isWin) "zip" else "tar.gz"
+    val prefix = s"https://github.com/mccutchen/go-httpbin/releases/download/v${goHttpBinVersion}"
+
+    val archiveName = s"go-httpbin-${platfrom}-${arch}.${ext}"
+    val archiveUrl = s"${prefix}/${archiveName}"
+    val archiveChecksumUrl = s"${prefix}/checksums.txt"
+    val archivePath = destDir / s"go-httpbin.${ext}"
+
+    val checksum = req.get(archiveChecksumUrl).lines()
+      .find(_.endsWith(archiveName))
+      .flatMap(_.split(" ").headOption)
+      .getOrElse(sys.error(s"Could not find checksum for ${archiveName}"))
+
+    val isDownload =
+      if (!os.exists(archivePath)) true
+      else calcChecksum(archivePath) != checksum
+    if (isDownload) {
+      req.get.stream(archiveUrl).writeBytesTo(new FileOutputStream(archivePath.toString))
+      val localChecksum = calcChecksum(archivePath)
+      if (localChecksum != checksum)
+        sys.error(s"Checksum (${localChecksum}) of downloaded archive (${archiveUrl}) does not match expected ${checksum}")
+    }
+    if (Properties.isWin) {
+      os.proc("unzip", archivePath, "-d", destDir).call()
+    } else {
+      os.proc("tar", "xzf", archivePath, "-C", destDir).call()
+    }
+
+    val targetExecBin = destDir / (if (Properties.isWin) "go-httpbin.exe" else "go-httpbin")
+    if (!os.exists(targetExecBin) || !os.isExecutable(targetExecBin))
+      sys.error(s"Expected to find executable `go-httpbin` in ${destDir}, but it was not.")
+    PathRef(targetExecBin)
+  }
 }
 
 object requests extends Module {
-  trait RequestsJvmModule extends RequestsCrossScalaModule with RequestsPublishModule {
+  object jvm extends Cross[RequestsJvmModule](scalaVersions)
+  trait RequestsJvmModule extends RequestsCrossScalaModule {
     object test extends ScalaTests with RequestsTestModule
   }
-  object jvm extends Cross[RequestsJvmModule](scalaVersions)
 
-  // trait RequestsNativeModule extends ScalaNativeModule with RequestsPublishModule {
+  // // Scala Native is only supported for Scala 3
+  // object native extends Cross[RequestsNativeModule](scala3Versions)
+  // trait RequestsNativeModule extends RequestsCrossScalaModule with ScalaNativeModule {
   //   override def scalaNativeVersion = scalaNativeVer
-  //
-  //   def mvnDeps =
-  //     super.mvnDeps() ++ Seq(mvn"com.github.lolgab::scala-native-crypto::0.1.0")
-  //
+
+  //   def mvnDeps = super.mvnDeps() ++ Seq(
+  //     mvn"com.github.lolgab::scala-native-crypto::0.0.0-64-255fa4-DIRTY5a4581dc",
+  //     mvn"io.lqhuang::scala-native-java-http-client::0.0.0-251-fd6fcc-DIRTY79dbd950",
+  //   )
+
   //   object test extends ScalaNativeTests with RequestsTestModule
   // }
-  // object native extends Cross[RequestsNativeModule](scalaVersions)
 }
