@@ -1,12 +1,17 @@
 package requests
 
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import java.io._
-import java.net.InetSocketAddress
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
-import requests.Compress._
+
 import scala.annotation.tailrec
 import scala.collection.mutable.StringBuilder
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import com.comcast.ip4s._
+import org.http4s.HttpRoutes
+import org.http4s.dsl.io._
+import org.http4s.ember.server.EmberServerBuilder
 
 object ServerUtils {
   def usingEchoServer(f: Int => Unit): Unit = {
@@ -15,36 +20,36 @@ object ServerUtils {
     finally server.stop()
   }
 
-  private class EchoServer extends HttpHandler {
-    private val server: HttpServer =
-      HttpServer.create(new InetSocketAddress(0), 0)
-    server.createContext("/echo", this)
-    server.setExecutor(null); // default executor
-    server.start()
+  private class EchoServer {
+    private val ember = EmberServerBuilder
+      .default[IO]
+      .withHost(ipv4"127.0.0.1")
+      .withPort(port"0")
+      .withHttpApp(echoRoutes.orNotFound)
+      .build
+      .allocated
+      .unsafeRunSync()
+    private val server = ember._1
+    private val release = ember._2
 
-    def getPort(): Int = server.getAddress.getPort
+    def getPort(): Int = server.addressIp4s.port.value
 
-    def stop(): Unit = server.stop(0)
+    def stop(): Unit = release.unsafeRunSync()
+  }
 
-    override def handle(t: HttpExchange): Unit = try {
-      val h: java.util.List[String] =
-        t.getRequestHeaders.get("Content-encoding")
+  private val echoRoutes = HttpRoutes.of[IO] {
+    case req @ POST -> Root / "echo" =>
       val c: Compress =
-        if (h == null) None
-        else if (h.contains("gzip")) Gzip
-        else if (h.contains("deflate")) Deflate
-        else None
-      val msg = new Plumper(c).decompress(t.getRequestBody)
-      t.sendResponseHeaders(200, msg.length)
-      t.getResponseBody.write(msg.getBytes())
-      t.getResponseBody.close()
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        t.sendResponseHeaders(500, -1)
-    } finally {
-      t.close()
-    }
+        req.headers.headers
+          .find(_.name.toString.equalsIgnoreCase("content-encoding"))
+          .map(_.value) match {
+          case Some("gzip")    => Compress.Gzip
+          case Some("deflate") => Compress.Deflate
+          case _               => Compress.None
+        }
+      req.body.compile.to(Array).flatMap { compressed =>
+        IO(new Plumper(c).decompress(new ByteArrayInputStream(compressed))).flatMap(Ok(_))
+      }
   }
 
   /**
@@ -56,9 +61,9 @@ object ServerUtils {
 
     private def wrap(is: InputStream): InputStream =
       c match {
-        case None    => is
-        case Gzip    => new GZIPInputStream(is)
-        case Deflate => new InflaterInputStream(is)
+        case Compress.None    => is
+        case Compress.Gzip    => new GZIPInputStream(is)
+        case Compress.Deflate => new InflaterInputStream(is)
       }
 
     def decompress(compressed: InputStream): String = {
