@@ -4,6 +4,8 @@
 //| - com.github.lolgab::mill-mima_mill1:0.2.0
 package build
 
+import scala.util.Properties
+
 import mill._
 import scalalib._
 import scalanativelib._
@@ -47,7 +49,9 @@ trait RequestsPublishModule extends PublishModule with MimaCheck {
 
 trait RequestsCrossScalaModule extends CrossScalaModule with ScalaModule {
   def moduleDir = build.moduleDir / "requests"
-  def sources = Task.Sources("src")
+
+  // Default sources for JDK 21+ and Scala Native
+  def sources = Task.Sources("src", "src-modern")
 }
 
 trait RequestsTestModule extends TestModule.Utest {
@@ -62,7 +66,18 @@ trait RequestsTestModule extends TestModule.Utest {
 }
 
 object requests extends Module {
-  trait RequestsJvmModule extends RequestsCrossScalaModule with RequestsPublishModule {
+  trait RequestsJvmModule extends RequestsCrossScalaModule {
+    private def runtimeJvmMajorVersion = Task {
+      val customJvmVer = jvmVersion()
+      val runtimeJvmVer = if (!customJvmVer.isEmpty()) jvmVersion() else Properties.javaVersion
+      runtimeJvmVer.split('.').head.toInt
+    }
+    private def legacySources = Task.Sources("src", "src-legacy")
+
+    override def sources = Task {
+      if (runtimeJvmMajorVersion() >= 21) super.sources() else legacySources()
+    }
+
     object test extends ScalaTests with RequestsTestModule
   }
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
