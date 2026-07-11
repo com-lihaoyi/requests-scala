@@ -3,10 +3,10 @@ package requests
 import java.io._
 import java.net.http._
 import java.net.{UnknownHostException => _, _}
+import java.net.URL
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.concurrent.{ExecutorService, Executors, Flow, ThreadFactory, TimeUnit}
-import java.util.function.Supplier
+import java.util.concurrent.{ExecutorService, Executors, Flow, ThreadFactory}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import scala.collection.JavaConverters._
@@ -56,8 +56,8 @@ trait BaseSession extends AutoCloseable {
   )
 
   /**
-   * Closes the shared HttpClient and its executor. Call this when you're done
-   * with the session to release resources and prevent thread leaks.
+   * Closes the shared HttpClient and its executor. Call this when you're done with the session to
+   * release resources and prevent thread leaks.
    */
   def close(): Unit = {
     BaseSession.closeHttpClient(sharedHttpClient)
@@ -78,7 +78,7 @@ object BaseSession {
     sslContext: SSLContext,
     verifySslCerts: Boolean,
     connectTimeout: Int,
-    executor: ExecutorService
+    executor: ExecutorService,
   ): HttpClient = {
     val builder = HttpClient
       .newBuilder()
@@ -104,8 +104,8 @@ object BaseSession {
   }
 
   /**
-   * Closes an HttpClient, using reflection to handle both Java 21+ (which has close())
-   * and earlier versions (which require accessing internal selector).
+   * Closes an HttpClient, using reflection to handle both Java 21+ (which has close()) and earlier
+   * versions (which require accessing internal selector).
    */
   def closeHttpClient(httpClient: HttpClient): Unit = {
     try {
@@ -134,7 +134,7 @@ object BaseSession {
             System.err.println(
               "requests: Unable to close HttpClient SelectorManager thread. " +
               "To fix thread leaks on Java <21, add JVM arg: " +
-              "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED"
+              "--add-opens java.net.http/jdk.internal.net.http=ALL-UNNAMED",
             )
         }
     }
@@ -290,13 +290,11 @@ case class Requester(verb: String, sess: BaseSession) {
       onHeadersReceived: StreamHeaders => Unit = null,
   ): geny.Readable = new geny.Readable {
     def readBytesThrough[T](f: java.io.InputStream => T): T = {
-
-      val url0 = new java.net.URL(url)
-
+      val url0 = new URL(url)
       val url1 = if (params.nonEmpty) {
         val encodedParams = Util.urlEncode(params)
         val firstSep = if (url0.getQuery != null) "&" else "?"
-        new java.net.URL(url + firstSep + encodedParams)
+        new URL(url + firstSep + encodedParams)
       } else url0
 
       // Check if we can reuse the session's shared HttpClient
@@ -312,19 +310,18 @@ case class Requester(verb: String, sess: BaseSession) {
         else BaseSession.buildHttpClient(proxy, cert, sslContext, verifySslCerts, connectTimeout, sess.executor)
 
       try {
-
         val sessionCookieValues = for {
           c <- (sess.cookies ++ cookies).valuesIterator
           if !c.hasExpired
-          if c.getDomain == null || c.getDomain == url1.getHost
-          if c.getPath == null || url1.getPath.startsWith(c.getPath)
-        } yield (c.getName, c.getValue)
-  
+          if c.getDomain() == null || c.getDomain() == url1.getHost()
+          if c.getPath() == null || url1.getPath().startsWith(c.getPath())
+        } yield (c.getName(), c.getValue())
+
         val allCookies = sessionCookieValues ++ cookieValues
-  
+
         val (contentLengthHeader, otherBlobHeaders) =
           blobHeaders.partition(_._1.equalsIgnoreCase("Content-Length"))
-  
+
         val allHeaders =
           otherBlobHeaders ++
             sess.headers ++
@@ -350,7 +347,7 @@ case class Requester(verb: String, sess: BaseSession) {
         // Buffer the request body
         val requestBodyBuffer = new ByteArrayOutputStream()
         usingOutputStream(compress.wrap(requestBodyBuffer)) { os => data.write(os) }
-        val requestBodyBytes = requestBodyBuffer.toByteArray
+        val requestBodyBytes = requestBodyBuffer.toByteArray()
 
         val bodyPublisher: HttpRequest.BodyPublisher =
           if (requestBodyBytes.isEmpty) HttpRequest.BodyPublishers.noBody()
@@ -359,19 +356,18 @@ case class Requester(verb: String, sess: BaseSession) {
         val requestBuilder =
           HttpRequest
             .newBuilder()
-            .uri(url1.toURI)
+            .uri(url1.toURI())
             .timeout(Duration.ofMillis(readTimeout))
             .headers(headersKeyValueAlternating: _*)
             .method(upperCaseVerb, bodyPublisher)
 
         def wrapError: PartialFunction[Throwable, Nothing] = {
           case e: javax.net.ssl.SSLException => throw new InvalidCertException(url, e)
-          case _: HttpConnectTimeoutException | _: HttpTimeoutException =>
-            throw new TimeoutException(url, readTimeout, connectTimeout)
-          case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage)
+          case _: HttpConnectTimeoutException | _: HttpTimeoutException => throw new TimeoutException(url, readTimeout, connectTimeout)
+          case e: java.net.UnknownHostException => throw new UnknownHostException(url, e.getMessage())
           case e: java.nio.channels.UnresolvedAddressException => throw new UnknownHostException(url, e.getMessage)
           case e: java.security.cert.CertificateException => throw new InvalidCertException(url, e)
-          case e: java.security.cert.CertPathValidatorException=> throw new InvalidCertException(url, e)
+          case e: java.security.cert.CertPathValidatorException => throw new InvalidCertException(url, e)
         }
 
         val response =
@@ -385,7 +381,7 @@ case class Requester(verb: String, sess: BaseSession) {
                 .orElse(Option(e.getCause).flatMap(c => wrapError.lift(c.getCause)))
                 .getOrElse(throw new RequestsException(e.getMessage, Some(e)))
           }
-  
+
         val responseCode = response.statusCode()
         val headerFields =
           response
@@ -395,7 +391,7 @@ case class Requester(verb: String, sess: BaseSession) {
             .filter(_._1 != null)
             .map { case (k, v) => (k.toLowerCase(), v.asScala.toList) }
             .toMap
-  
+
         val deGzip = autoDecompress && headerFields
           .get("content-encoding")
           .toSeq
@@ -414,10 +410,10 @@ case class Requester(verb: String, sess: BaseSession) {
               .iterator
               .flatten
               .flatMap(HttpCookie.parse(_).asScala)
-              .foreach(c => sess.cookies(c.getName) = c)
+              .foreach(c => sess.cookies(c.getName()) = c)
           }
         }
-  
+
         if (
           responseCode.toString.startsWith("3") &&
           responseCode.toString != "304" &&
@@ -425,8 +421,8 @@ case class Requester(verb: String, sess: BaseSession) {
         ) {
           val out = new ByteArrayOutputStream()
           Util.transferTo(response.body, out)
-          val bytes = out.toByteArray
-  
+          val bytes = out.toByteArray()
+
           val current = Response(
             url = url,
             statusCode = responseCode,
@@ -438,7 +434,7 @@ case class Requester(verb: String, sess: BaseSession) {
           persistCookies()
           val newUrl = current.headers("location").head
           stream(
-            url = new URL(url1, newUrl).toString,
+            url = new URL(url1, newUrl).toString(),
             auth = auth,
             params = params,
             blobHeaders = blobHeaders,
@@ -471,9 +467,9 @@ case class Requester(verb: String, sess: BaseSession) {
             history = redirectedFrom,
           )
           if (onHeadersReceived != null) onHeadersReceived(streamHeaders)
-  
+
           val stream = response.body()
-  
+
           def processWrappedStream[V](f: java.io.InputStream => V): V = {
             // The HEAD method is identical to GET except that the server
             // MUST NOT return a message-body in the response.
@@ -491,7 +487,7 @@ case class Requester(verb: String, sess: BaseSession) {
               f(new ByteArrayInputStream(Array()))
             }
           }
-  
+
           if (streamHeaders.statusCode == 304 || streamHeaders.is2xx || !check)
             processWrappedStream(f)
           else {
@@ -502,7 +498,7 @@ case class Requester(verb: String, sess: BaseSession) {
                 url = streamHeaders.url,
                 statusCode = streamHeaders.statusCode,
                 statusMessage = streamHeaders.statusMessage,
-                data = new geny.Bytes(errorOutput.toByteArray),
+                data = new geny.Bytes(errorOutput.toByteArray()),
                 headers = streamHeaders.headers,
                 history = streamHeaders.history,
               ),

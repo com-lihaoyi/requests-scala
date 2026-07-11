@@ -7,11 +7,14 @@ import java.nio.file.{FileSystems, Path}
 import utest._
 
 object ModelTests extends TestSuite {
+
+  val RESOURCE_DIR = sys.env("MILL_TEST_RESOURCE_DIR")
+
   val tests = Tests {
     test("multipart file uploads should contain application/octet-stream content type") {
-      val path = getClass.getResource("/license.zip").getPath
+      val path = s"${RESOURCE_DIR}/license.zip"
       val file = new File(path)
-      val nioPath = FileSystems.getDefault.getPath(path)
+      val nioPath = FileSystems.getDefault().getPath(path)
       val fileKey = "fileKey"
       val fileName = "fileName"
 
