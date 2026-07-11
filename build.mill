@@ -136,7 +136,7 @@ trait RequestsTestModule extends TestModule.Utest {
 object requests extends Module {
   object jvm extends Cross[RequestsJvmModule](scalaVersions)
   trait RequestsJvmModule extends RequestsCrossScalaModule {
-    object test extends ScalaTests with RequestsTestModul
+    object test extends ScalaTests with RequestsTestModule
   }
 
   // // Scala Native is only supported for Scala 3
