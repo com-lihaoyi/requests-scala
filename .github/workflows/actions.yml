@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: ['11', '17', '21']
+        java: ['17', '21', '25']
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
         run: |
-          sed -i 's#//| mill-jvm-version: 11#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
+          sed -i 's#//| mill-jvm-version: 25#//| mill-jvm-version: ${{ matrix.java }}#' build.mill
           ./mill -i -DscalaNextVersion=${{ env.SCALA_NEXT_VERSION }} __.publishArtifacts + __.test
 
   check-binary-compatibility:
