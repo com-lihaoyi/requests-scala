@@ -1,15 +1,13 @@
 package requests
 
 import java.io.FileInputStream
-import java.net.HttpCookie
+
 import java.util.UUID
 
 import collection.JavaConverters._
 import java.io.OutputStream
 import java.nio.charset.Charset
 import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
-
-import javax.net.ssl.SSLContext
 
 /**
  * Mechanisms for compressing the upload stream; supports Gzip and Deflate by default
@@ -47,8 +45,8 @@ case class Request(
     connectTimeout: Int = 0,
     proxy: (String, Int) = null,
     cert: Cert = null,
-    sslContext: SSLContext = null,
-    cookies: Map[String, HttpCookie] = Map(),
+    sslContext: Any = null,
+    cookies: Map[String, BaseCookie] = Map(),
     cookieValues: Map[String, String] = Map(),
     maxRedirects: Int = 5,
     verifySslCerts: Boolean = true,
@@ -212,12 +210,12 @@ case class Response(
   /**
    * Returns the cookies set by this response, and by any redirects that lead up to it
    */
-  val cookies: Map[String, HttpCookie] =
+  val cookies: Map[String, BaseCookie] =
     history.toSeq.flatMap(_.cookies).toMap ++ headers
       .get("set-cookie")
       .iterator
       .flatten
-      .flatMap(java.net.HttpCookie.parse(_).asScala)
+      .flatMap(BaseCookie.parse(_))
       .map(x => x.getName -> x)
       .toMap
 
