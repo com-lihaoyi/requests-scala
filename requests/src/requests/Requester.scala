@@ -424,7 +424,9 @@ case class Requester(verb: String, sess: BaseSession) {
           maxRedirects > 0
         ) {
           val out = new ByteArrayOutputStream()
-          Util.transferTo(response.body, out)
+          Util.withReadTimeout(response.body, readTimeout, url, connectTimeout) { is =>
+            Util.transferTo(is, out)
+          }
           val bytes = out.toByteArray
   
           val current = Response(
@@ -481,11 +483,13 @@ case class Requester(verb: String, sess: BaseSession) {
             if (upperCaseVerb == "HEAD") f(new ByteArrayInputStream(Array()))
             else if (stream != null) {
               try
-                f(
-                  if (deGzip) new GZIPInputStream(stream)
-                  else if (deDeflate) new InflaterInputStream(stream)
-                  else stream,
-                )
+                Util.withReadTimeout(stream, readTimeout, url, connectTimeout) { s =>
+                  f(
+                    if (deGzip) new GZIPInputStream(s)
+                    else if (deDeflate) new InflaterInputStream(s)
+                    else s,
+                  )
+                }
               finally if (!keepAlive) stream.close()
             } else {
               f(new ByteArrayInputStream(Array()))

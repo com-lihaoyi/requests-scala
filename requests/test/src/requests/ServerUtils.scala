@@ -15,6 +15,23 @@ object ServerUtils {
     finally server.stop()
   }
 
+  /** Sends response headers then stalls without sending the body (issue #229 repro). */
+  def usingStallServer(claimedBodySize: Long = 1024 * 1024)(f: Int => Unit): Unit = {
+    val server = HttpServer.create(new InetSocketAddress(0), 0)
+    server.createContext(
+      "/stall",
+      new HttpHandler {
+        override def handle(exchange: HttpExchange): Unit = {
+          exchange.sendResponseHeaders(200, claimedBodySize)
+        }
+      },
+    )
+    server.setExecutor(null)
+    server.start()
+    try f(server.getAddress.getPort)
+    finally server.stop(0)
+  }
+
   private class EchoServer extends HttpHandler {
     private val server: HttpServer =
       HttpServer.create(new InetSocketAddress(0), 0)
