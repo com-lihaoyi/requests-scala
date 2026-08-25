@@ -1,12 +1,63 @@
 package requests
 
-import java.io.{FileInputStream, InputStream, OutputStream}
+import java.io.{FileInputStream, InputStream, InterruptedIOException, OutputStream}
 import java.net.URLEncoder
 import java.security.cert.X509Certificate
+import java.util.concurrent.{Executors, TimeUnit}
 
 import javax.net.ssl.{KeyManagerFactory, SSLContext, TrustManager, X509TrustManager}
 
 object Util {
+  private val readTimeoutScheduler = Executors.newSingleThreadScheduledExecutor(r => {
+    val t = new Thread(r, "requests-scala-read-timeout")
+    t.setDaemon(true)
+    t
+  })
+
+  private[requests] def withReadTimeout[T](
+      is: InputStream,
+      readTimeoutMs: Int,
+      url: String,
+      connectTimeout: Int,
+  )(f: InputStream => T): T = {
+    if (readTimeoutMs <= 0) f(is)
+    else {
+      val callerThread = Thread.currentThread()
+      @volatile var timedOut = false
+      val cancelTask = readTimeoutScheduler.schedule(
+        new Runnable {
+          def run(): Unit = {
+            timedOut = true
+            callerThread.interrupt()
+            try is.close()
+            catch { case _: Throwable => }
+          }
+        },
+        readTimeoutMs,
+        TimeUnit.MILLISECONDS,
+      )
+      try {
+        f(is)
+      } catch {
+        case e @ (_: InterruptedException | _: InterruptedIOException) =>
+          if (timedOut) throw new TimeoutException(url, readTimeoutMs, connectTimeout)
+          else throw e
+        case e: java.io.IOException if timedOut =>
+          throw new TimeoutException(url, readTimeoutMs, connectTimeout)
+        case e: Throwable =>
+          Option(e.getCause) match {
+            case Some(_: InterruptedException | _: InterruptedIOException) if timedOut =>
+              throw new TimeoutException(url, readTimeoutMs, connectTimeout)
+            case _ => throw e
+          }
+      } finally {
+        cancelTask.cancel(false)
+        // Always clear: watchdog interrupts the caller on timeout; leave no sticky flag.
+        Thread.interrupted()
+      }
+    }
+  }
+
   def transferTo(
       is: InputStream,
       os: OutputStream,
