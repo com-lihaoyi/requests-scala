@@ -52,7 +52,8 @@ object Util {
           }
       } finally {
         cancelTask.cancel(false)
-        if (!timedOut) Thread.interrupted()
+        // Always clear: watchdog interrupts the caller on timeout; leave no sticky flag.
+        Thread.interrupted()
       }
     }
   }
